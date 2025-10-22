@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Recursos</title>
+    <link rel="icon" type="image/png" href="../img/logo.png">
+
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/recursos.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">Gestión de Recursos</div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html">Inicio</a></li>
+      <li><a href="comunicados.html">Comunicados</a></li>
+      <!--<li><a href="biblioteca.html">Biblioteca</a></li>-->
+      <li><a href="perfil.html">Perfil</a></li>
+    </ul>
+  </nav>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <ul id="category-list"></ul>
+
+    <!-- Panel solo para Admin -->
+    <div class="admin-panel" id="admin-panel">
+      <h3>Agregar Categoría</h3>
+      <input type="text" id="new-category-name" placeholder="Nombre categoría">
+      <button id="add-category-btn">➕ Agregar Categoría</button>
+
+      <h3>Agregar Subcategoría</h3>
+      <select id="parent-category-select">
+        <option value="">Selecciona categoría</option>
+      </select>
+      <input type="text" id="new-subcategory-name" placeholder="Nombre subcategoría">
+      <button id="add-subcategory-btn">➕ Agregar Subcategoría</button>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <div id="resource-list">
+      <h2>Selecciona una categoría o subcategoría</h2>
+    </div>
+
+    <!-- Botón solo admin -->
+    <button id="add-resource-btn" class="admin-only">Agregar recurso</button>
+  </div>
+
+  <!-- Modal recurso -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span id="close-modal">&times;</span>
+      <h2 id="modal-title">Agregar Recurso</h2>
+      <input type="text" id="resource-title" placeholder="Título del recurso">
+      <input type="text" id="resource-type" placeholder="Tipo de recurso (PDF, Video, etc.)">
+      <input type="text" id="resource-desc" placeholder="Descripción del recurso">
+      <input type="text" id="resource-link" placeholder="Enlace de Google Drive">
+      <button id="save-resource">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmación -->
+<div id="modalConfirmacion" class="modal oculto">
+  <div class="modal-contenido">
+    <h2>¿Eliminar recurso?</h2>
+    <p>Esta acción no se puede deshacer.</p>
+    <div class="botones">
+      <button id="confirmarEliminarBtn" class="btn-rojo">Eliminar</button>
+      <button id="cancelarEliminarBtn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+  <script type="module" src="js/recursos.js"></script>
+
+</body>
+</html>

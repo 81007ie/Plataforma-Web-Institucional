@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendario Académico</title>
+  <link rel="icon" type="image/png" href="img/logo.png" />
+
+  <!-- Importar estilos -->
+  <link rel="stylesheet" href="css/colors.css" />
+  <link rel="stylesheet" href="css/calendario.css" />
+
+
+</head>
+<body>
+
+  <h1>📅 Calendario Académico</h1>
+  <button id="btnInicio" class="btn-inicio">🏠 Regresar al Inicio</button>
+
+ <div class="calendario">
+ <div class="calendar-header">
+  <button id="prev" class="nav-btn">⟨</button>
+  <h2 id="monthYear"></h2>
+  <button id="next" class="nav-btn">⟩</button>
+</div>
+
+
+  <div class="days-header">
+    <div>Dom</div><div>Lun</div><div>Mar</div><div>Mié</div>
+    <div>Jue</div><div>Vie</div><div>Sáb</div>
+  </div>
+
+  <div class="days" id="days"></div>
+</div>
+
+
+  <!-- MODAL -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+
+      <!-- 🔹 ADMIN -->
+      <form id="eventForm">
+        <h2>Evento</h2>
+        <input type="hidden" id="fecha" />
+
+        <label>Título</label>
+        <input type="text" id="titulo" required />
+
+        <label>Descripción</label>
+        <textarea id="descripcion" required></textarea>
+
+        <label>Hora</label>
+        <input type="time" id="hora" />
+
+        <label>Tipo</label>
+        <input type="text" id="tipo" />
+
+        <div class="botones">
+          <button type="submit" id="guardarEvento" class="guardar">💾 Guardar</button>
+          <button type="button" id="eliminarEvento" class="eliminar">🗑️ Eliminar</button>
+        </div>
+      </form>
+
+      <!-- 🔹 PROFESOR -->
+      <div id="eventView">
+        <h2 id="viewTitulo"></h2>
+        <p id="viewDescripcion"></p>
+        <p><b>Fecha:</b> <span id="viewFecha"></span></p>
+        <p><b>Hora:</b> <span id="viewHora"></span></p>
+        <p><b>Tipo:</b> <span id="viewTipo"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script type="module" src="js/calendario.js"></script>
+
+</body>
+</html>

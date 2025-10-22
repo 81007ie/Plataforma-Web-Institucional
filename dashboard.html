@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+
+  <!-- Importar estilos -->
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav>
+  <div class="user-info">
+    <span id="nombreUsuario" class="nombre-animado"></span>
+    <button id="btnLogout" class="btn-demo">Cerrar sesión</button>
+  </div>
+</nav>
+
+
+  <!-- Dashboard -->
+  <div class="dashboard">
+    <!-- Columna izquierda -->
+    <div class="col-izquierda">
+      <div class="bienvenidos">
+        <img src="img/Bienvenidos.png" alt="Bienvenidos" class="logo-dashboard">
+      </div>
+
+      <div class="comunicados-inicio">
+        <h2>📢 Comunicados</h2>
+        <ul id="lista-comunicados"></ul>
+        <p><a href="comunicados.html"  class="btn-vermas">Ver todos los comunicados</a></p>
+      </div>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="col-derecha">
+      <div class="card" id="moduloRecursos">
+        <h2>📂 Recursos</h2>
+        <p><a href="recursos.html"  class="btn-vermas"> ➯ </a></p>
+      </div>
+       <!-- *<div class="card" id="moduloBiblioteca">
+        <h2>📚 Biblioteca</h2>
+        <p><a href="../html/biblioteca.html"  class="btn-vermas"> ➯ </a></p>
+      </div>-->
+      <div class="card" id="moduloPerfil">
+        <h2>👤 Perfil</h2>
+        <p><a href="perfil.html"  class="btn-vermas"> ➯ </a></p>
+      </div>
+
+      <div class="card calendario">
+        <h2>📅 Calendario</h2>
+        <div class="calendar">
+          <div class="calendar-header">
+            <span id="month-year"></span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+            <a href="calendario.html" class="btn-calendario">Ver calendario completo ➯</a>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔗 Scripts -->
+  <script type="module" src="js/firebaseconfig.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+  <script>
+    // ====== Calendario dinámico ======
+    const monthYear = document.getElementById("month-year");
+    const calendarGrid = document.getElementById("calendar-grid");
+
+    const fecha = new Date();
+    const mes = fecha.toLocaleString("es-ES", { month: "long" });
+    const año = fecha.getFullYear();
+
+    monthYear.textContent = `${mes.toUpperCase()} ${año}`;
+
+    // Obtener el primer día y los días del mes
+    const primerDia = new Date(año, fecha.getMonth(), 1).getDay();
+    const diasEnMes = new Date(año, fecha.getMonth() + 1, 0).getDate();
+
+    // Encabezados de semana
+    const diasSemana = ["L", "M", "X", "J", "V", "S", "D"];
+    diasSemana.forEach(d => {
+      const div = document.createElement("div");
+      div.classList.add("day-name");
+      div.textContent = d;
+      calendarGrid.appendChild(div);
+    });
+
+    // Espacios en blanco antes del primer día
+    for (let i = 1; i < (primerDia === 0 ? 7 : primerDia); i++) {
+      const empty = document.createElement("div");
+      empty.classList.add("empty");
+      calendarGrid.appendChild(empty);
+    }
+
+    // Días del mes
+    for (let d = 1; d <= diasEnMes; d++) {
+      const day = document.createElement("div");
+      day.classList.add("day");
+      day.textContent = d;
+
+      // Resaltar hoy
+      if (d === fecha.getDate()) {
+        day.classList.add("today");
+      }
+
+      calendarGrid.appendChild(day);
+    }
+
+  </script>
+ 
+</body>
+</html>

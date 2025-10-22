@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro de Usuario</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+  
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/registro.css">
+</head>
+<body>
+  <div class="register-container">
+    <h2>Registro de Profesor(a)</h2>
+
+    <form id="formRegistro">
+      <input id="nombre" type="text" placeholder="Nombre Completo" required />
+      <input id="grado" type="text" placeholder="Grado/Salón/Materia" />
+
+      <label for="nivel">Nivel</label><br/>
+      <select id="nivel" required>
+        <option value="Primaria">Primaria</option>
+        <option value="Secundaria">Secundaria</option>
+        <option value="Ambos">Ambos</option>
+      </select>
+
+      <input id="email" type="email" placeholder="Correo Electrónico" required />
+
+      <div class="password-container">
+        <input id="password" type="password" placeholder="Contraseña (mín. 6 caracteres)" required />
+        <span class="toggle-password" id="togglePassword">MOSTRAR</span>
+      </div>
+
+      <button id="btnSubmit" type="submit">REGISTRARSE</button>
+
+      <div class="login-link">
+        ¿Ya tienes una cuenta? <a href="login.html">Inicia sesión</a>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="js/registro.js"></script>
+</body>
+</html>

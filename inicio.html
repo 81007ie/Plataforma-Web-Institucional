@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Colegio MODELO</title>
+  <link rel="icon" type="image/png" href="img/logo.png">
+
+  <!-- Importar css -->
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/styles_inicio.css">
+</head>
+
+<body class="fondo-centro">
+  <!-- Contenedor principal -->
+  <main class="container">
+    <h1>I.E. 81007 - MODELO</h1>
+
+    <!-- Botón para ingresar -->
+    <button class="btn btn-rojo" id="btnLogin">
+      Inicia sesión
+    </button>
+
+    <!-- Botón para crear nuevo usuario -->
+    <button class="btn btn-rojo" id="btnRegistro">
+      Crea tu cuenta
+    </button>
+
+    <!-- Botón que abre el modal -->
+    <button class="btn btn-azul" id="btnInfo">
+      ℹ️ Cómo crear una cuenta
+    </button>
+
+    <!-- Modal oculto -->
+    <div id="modalInfo" class="modal">
+      <div class="modal-content">
+        <span class="close" id="btnCerrar">&times;</span>
+        <h3>ℹ️ Cómo crear una cuenta</h3>
+        <p>
+          Para crear una cuenta, haz clic en el botón <strong>"Crea tu cuenta"</strong> y completa el formulario de registro.<br><br>
+          Recuerda que debes usar tu correo institucional para el registro.<br><br>
+          <strong>nombreapellido@modeloweb.com</strong><br><br>
+          Si ya tienes una cuenta, utiliza el botón <strong>"Inicia sesión"</strong> para acceder.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    © 2025 Colegio MODELO - Todos los derechos reservados
+  </footer>
+
+  <!-- ===== JS integrado ===== -->
+  <script>
+    // --- Referencias ---
+    const modal = document.getElementById('modalInfo');
+    const btnInfo = document.getElementById('btnInfo');
+    const btnCerrar = document.getElementById('btnCerrar');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnRegistro = document.getElementById('btnRegistro');
+
+    // --- Abrir modal ---
+    btnInfo.addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+
+    // --- Cerrar modal ---
+    btnCerrar.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    // --- Cerrar al hacer clic fuera del modal ---
+    window.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+
+    // --- Redirecciones ---
+    btnLogin.addEventListener('click', () => {
+      window.location.href = 'login.html';
+    });
+
+    btnRegistro.addEventListener('click', () => {
+      window.location.href = 'registro.html';
+    });
+  </script>
+</body>
+</html>

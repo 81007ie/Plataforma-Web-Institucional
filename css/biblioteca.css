@@ -1,0 +1,253 @@
+/* 🔹 Fondo difuminado */
+body {
+  font-family: var(--font-family);
+  margin: 0;
+  color: var(--negro);
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Capa de fondo difuminado */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("../img/libros.jpg") no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(5px) brightness(0.8);
+  transform: scale(1.05);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* =========================================================
+   🔹 Navbar
+========================================================= */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: var(--azul-oscuro);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--celeste);
+}
+
+/* =========================================================
+   🔹 Contenido general
+========================================================= */
+.contenido {
+  position: relative;
+  z-index: 1;
+  margin-top: 90px;
+  padding: 20px 40px;
+}
+
+/* =========================================================
+   🔹 Título principal
+========================================================= */
+.contenedor-titulo {
+  text-align: center;
+}
+
+.titulo-biblioteca {
+  background-color: white;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 2rem;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+  margin: 0 auto 30px auto;
+}
+
+.titulo-biblioteca .logo {
+  width: 45px;
+  height: auto;
+  margin-right: 12px;
+}
+
+/* =========================================================
+   🔹 Buscador
+========================================================= */
+.buscador {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.buscador input {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--gris);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* =========================================================
+   🔹 Botones
+========================================================= */
+.btn-accion {
+  background: var(--celeste);
+  color: var(--blanco);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.btn-accion:hover {
+  background: var(--azul-borde);
+}
+
+.btn-eliminar {
+  background: var(--rojo);
+}
+.btn-eliminar:hover {
+  background: darkred;
+}
+
+.btn-editar {
+  background: orange;
+}
+.btn-editar:hover {
+  background: darkorange;
+}
+
+/* =========================================================
+   🔹 Grid de libros
+========================================================= */
+.grid-biblioteca {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 25px;
+}
+
+.libro {
+  background: var(--blanco);
+  border: 1px solid var(--gris);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.libro:hover {
+  transform: scale(1.05);
+}
+
+.libro h3, .libro h4 {
+  margin: 0 0 10px;
+  color: var(--azul-oscuro);
+}
+
+.estado {
+  font-weight: bold;
+  margin-top: 8px;
+}
+.estado.disponible { color: green; }
+.estado.prestado { color: var(--rojo); }
+
+.acciones {
+  margin-top: 10px;
+  text-align: right;
+}
+
+/* =========================================================
+   🔹 Historial
+========================================================= */
+.historial {
+  margin-top: 40px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  background: #f0f8ff;
+  border: 1px solid var(--gris);
+  box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+}
+
+.historial h3 {
+  margin-top: 0;
+  color: var(--azul-oscuro);
+}
+
+.historial-item, .movimiento {
+  font-size: 14px;
+  border-bottom: 1px solid #ddd;
+  padding: 6px 0;
+}
+
+/* =========================================================
+   🔹 Formularios (Agregar / Editar)
+========================================================= */
+.form-prestamo input {
+  display: block;
+  width: 95%;
+  padding: 8px;
+  margin: 8px auto;
+  border-radius: 5px;
+  border: 1px solid var(--gris);
+}
+
+/* =========================================================
+   🔹 Modales
+========================================================= */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: var(--blanco);
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  text-align: center;
+  position: relative;
+}
+
+.cerrar {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--rojo);
+  transition: color 0.2s;
+}
+.cerrar:hover {
+  color: var(--azul-oscuro);
+}

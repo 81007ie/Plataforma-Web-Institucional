@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bienvenido a la Plataforma Web</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* 🌟 Reset y tipografía */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', Arial, sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: #fff;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+      opacity: 0;
+      animation: fadeInUp 1s ease-in-out forwards;
+    }
+
+    p {
+      font-size: 1.1rem;
+      font-weight: 400;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeInUp 1.3s ease-in-out forwards;
+    }
+
+    /* 🔄 Loader elegante */
+    .loader {
+      position: relative;
+      width: 70px;
+      height: 70px;
+    }
+
+    .loader span {
+      display: block;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 6px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      animation: spin 1.2s linear infinite;
+    }
+
+    .loader span:nth-child(2) {
+      border: 6px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #fff;
+      animation-duration: 1.6s;
+    }
+
+    .loader span:nth-child(3) {
+      border: 6px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #fff;
+      animation-duration: 2s;
+    }
+
+    /* Animaciones */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Bienvenido a la Plataforma Web Institucional</h1>
+  <p>Estamos preparando todo para ti, por favor espera...</p>
+
+  <div class="loader">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <script>
+    // Redirección después de 3 segundos
+    setTimeout(() => {
+      window.location.href = "inicio.html";
+    }, 1500);
+  </script>
+</body>
+</html>

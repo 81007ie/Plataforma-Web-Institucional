@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblioteca</title>
+  <link rel="icon" type="image/png" href="../img/logo.png">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="../html/css/colors.css">
+  <link rel="stylesheet" href="../html/css/biblioteca.css">
+</head>
+<body>
+
+  <!-- 🔹 Navbar principal -->
+  <nav class="navbar">
+    <div class="logo">I.E. 81007 - MODELO</div>
+    <ul class="nav-links">
+      <li><a href="../html/dashboard.html">Inicio</a></li>
+      <li><a href="../html/comunicados.html">Comunicados</a></li>
+      <li><a href="../html/recursos.html">Recursos</a></li>
+      <li><a href="../html/perfil.html">Perfil</a></li>
+    </ul>
+  </nav>
+
+  <!-- 🔹 Contenido principal -->
+  <main class="contenido">
+
+    <!-- Título -->
+    <div class="contenedor-titulo">
+      <h1 class="titulo-biblioteca">
+        <img src="../html/img/logo.png" alt="Logo" class="logo">
+        Biblioteca
+      </h1>
+    </div>
+
+    <!-- Botón agregar libro (solo visible para admin) -->
+    <div id="accionesAdmin" style="text-align: right; margin-bottom: 20px;">
+      <button class="btn-accion oculto" id="btnAgregarLibro">➕ Agregar Libro</button>
+    </div>
+
+    <!-- Buscador -->
+    <div class="buscador">
+      <input type="text" id="busqueda" placeholder="Buscar por título, autor o estado...">
+    </div>
+
+    <!-- Grid de libros -->
+    <div id="biblioteca" class="grid-biblioteca"></div>
+
+    <!-- Historial -->
+    <div class="historial">
+      <h3>📜 Historial de Préstamos</h3>
+      <div id="historial"></div>
+    </div>
+  </main>
+
+  <!-- 🔹 Modal: Información de libro -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span id="cerrarModal" class="cerrar">&times;</span>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 🔹 Modal: Agregar libro -->
+  <div id="modalAgregar" class="modal">
+    <div class="modal-content">
+      <span id="cerrarAgregar" class="cerrar">&times;</span>
+      <h2>📘 Agregar Nuevo Libro</h2>
+      <div class="form-prestamo">
+        <input type="text" id="nuevoTitulo" placeholder="Título">
+        <input type="text" id="nuevoAutor" placeholder="Autor">
+        <input type="text" id="nuevoGenero" placeholder="Género / Materia">
+        <button class="btn-accion" id="confirmarAgregar">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔹 Modal: Editar libro -->
+  <div id="modalEditar" class="modal">
+    <div class="modal-content">
+      <span id="cerrarEditar" class="cerrar">&times;</span>
+      <h2>✏️ Editar Libro</h2>
+      <div class="form-prestamo">
+        <input type="text" id="editarTitulo" placeholder="Título">
+        <input type="text" id="editarAutor" placeholder="Autor">
+        <input type="text" id="editarGenero" placeholder="Género / Materia">
+        <button class="btn-accion" id="confirmarEditar">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script type="module" src="../html/js/biblioteca.js"></script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+/* ====== Reset ====== */
+body { 
+  margin: 0; 
+  font-family: var(--font-family); 
+  background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.8)), 
+  url("img/colegio_back.png") center/cover no-repeat; padding: 0; /* 🔹 Eliminado padding que recortaba el navbar */ 
+  box-sizing: border-box; } 
+  /* ====== Navbar ====== */ 
+  nav { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    background-color: var(--celeste); 
+    color: white; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; padding: 14px 24px; /* 🔹 Un poco más de espacio vertical */ 
+    z-index: 1000; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2); 
+    box-sizing: border-box; 
+  } 
+
+.user-info { 
+  width: 100%; 
+  display: flex; 
+  justify-content: space-between; /* nombre izquierda / botón derecha */ 
+  align-items: center; 
+  color: white; 
+  font-size: 1rem; 
+  font-weight: 800; 
+} 
+.nombre-animado { 
+  opacity: 0; 
+  transform: translateY(-5px); 
+  animation: aparecer 0.8s ease-out forwards; 
+} 
+@keyframes aparecer { 
+  from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+.btn-demo {
+  background: #00AEEF;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-demo:hover {
+  background: #007bb8;
+  transform: scale(1.03);
+}
+
+/* ====== Dashboard general ====== */
+.dashboard {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  margin-top: 100px;
+}
+
+/* Columna izquierda */
+.col-izquierda {
+  flex: 2;
+  background: var(--blanco);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.col-izquierda .logo-dashboard {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.comunicados-inicio {
+  margin-top: 20px;
+}
+
+.comunicados-inicio h2 {
+  margin-bottom: 10px;
+}
+
+.comunicados-inicio ul {
+  list-style: none;
+  padding: 0;
+}
+
+.comunicados-inicio li {
+  background: #f0f4ff;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  border-left: 4px solid #00AEEF;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.comunicados-inicio li strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #1e3c72;
+}
+
+.comunicados-inicio li p {
+  margin: 0;
+  font-size: 13px;
+  color: #333;
+}
+
+.comunicados-inicio li em {
+  font-size: 12px;
+  color: #666;
+}
+
+.btn-vermas {
+  display: inline-block;
+  margin-top: 10px;
+  background: #6EC1E4;
+  color: white;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.btn-vermas:hover {
+  background: #1e3c72;
+}
+
+/* Columna derecha */
+.col-derecha {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Tarjetas */
+.card {
+  background: var(--blanco);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.card h2 {
+  font-size: 1.5rem;
+}
+
+.card:hover {
+  transform: scale(1.03);
+  background: #f0f4ff;
+}
+
+/* ====== Calendario ====== */
+.calendario {
+  text-align: center;
+}
+
+.calendar {
+  margin-top: 10px;
+}
+
+.calendar-header {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #1e3c72;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.day-name {
+  font-weight: bold;
+  color: #1e3c72;
+}
+
+.day, .empty {
+  padding: 12px;
+  background: #f5f6fa;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.day:hover {
+  background: #d0e4ff;
+}
+
+.today {
+  background: #00AEEF;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 0 6px rgba(0,174,239,0.5);
+}
+
+/* ====== Botón debajo del calendario ====== */
+.calendario .btn-calendario {
+  display: inline-block;
+  margin-top: 12px;
+  background: #00AEEF;
+  color: white;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.calendario .btn-calendario:hover {
+  background: #007bb8;
+  transform: scale(1.03);
+}

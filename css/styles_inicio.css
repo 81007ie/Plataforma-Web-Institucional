@@ -1,0 +1,154 @@
+/* =========================
+   General
+========================= */
+body {
+  font-family: var(--font-family);
+  margin: 0;
+  padding: 0;
+  background-color: var(--celeste);
+  color: var(--negro);
+}
+
+/* =========================
+   Fondo centrado e imagen
+========================= */
+/* --- Fondo con imagen difuminada --- */
+body.fondo-centro {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Capa de fondo con blur */
+body.fondo-centro::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../img/colegio_back.png") no-repeat center center fixed;
+  background-size: cover;
+  filter: blur(4px) brightness(0.8); /* 👈 Difuminado + oscurecido suave */
+  z-index: -1;
+  transform: scale(1.1); /* Evita bordes visibles del blur */
+}
+
+
+/* =========================
+   Contenedor principal
+========================= */
+main.container {
+  background: rgba(255, 255, 255, 0.85);
+  padding: var(--spacing-lg);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+/* =========================
+   Título
+========================= */
+main.container h1 {
+  margin-bottom: var(--spacing-md);
+  color: var(--celeste);
+}
+
+/* =========================
+   Botones
+========================= */
+.btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--blanco);
+  transition: 0.3s;
+  width: 220px;
+}
+
+/* Botones rojos */
+.btn-rojo {
+  background-color: var(--rojo);
+}
+
+.btn-rojo:hover {
+  background-color: #b71c1c;
+}
+
+/* Botones azules */
+.btn-azul {
+  background-color: var(--celeste);
+}
+
+.btn-azul:hover {
+  background-color: #0f2140;
+}
+
+/* =========================
+   Modal
+========================= */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: var(--blanco, #fff);
+  padding: 20px 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content h3 {
+  color: var(--azul-oscuro, #004080);
+  margin-bottom: 10px;
+}
+
+.modal-content p {
+  color: #333;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.close {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+}
+
+/* =========================
+   Footer
+========================= */
+footer {
+  background: var(--celeste);
+  color: var(--azul-oscuro);
+  padding: var(--spacing-sm);
+  text-align: center;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+}

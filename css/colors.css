@@ -1,0 +1,20 @@
+:root {
+  /* 🎨 Paleta principal */
+  --celeste: #6EC1E4;
+  --azul-oscuro: #1e3c72;
+  --azul-borde: #00AEEF;
+  --rojo: #E53935;
+
+  /* ⚪ Colores neutros */
+  --blanco: #FFFFFF;
+  --negro: #000000;
+  --gris: #555;
+
+    /* 📏 Espaciados */
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+
+  /* 🔠 Tipografía */
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}

@@ -1,0 +1,275 @@
+/* =========================================
+   🌟 CALENDARIO ELEGANTE INTRANET (VERSIÓN AJUSTADA Y CENTRADA)
+   Compatible con colors.css
+========================================= */
+
+body {
+  font-family: var(--font-family);
+  margin: 0;
+  background: linear-gradient(135deg, var(--celeste) 0%, var(--blanco) 100%);
+  color: var(--gris);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====== 🔹 NAVBAR ====== */
+.navbar {
+  background: var(--azul-oscuro);
+  color: var(--blanco);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+#btnInicio {
+  background: var(--blanco);
+  color: var(--azul-oscuro);
+  border: 2px solid var(--azul-borde);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+#btnInicio:hover {
+  background: var(--azul-borde);
+  color: var(--blanco);
+}
+
+/* ====== 📅 CALENDARIO ====== */
+.calendario {
+  width: 75%; /* 🔹 Ocupa más del ancho sin exagerar */
+  max-width: 950px; /* 🔹 Compacto, ideal para pantallas 1080p */
+  margin: 40px auto;
+  background: var(--blanco);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  padding: 35px 40px;
+  animation: fadeIn 0.6s ease;
+  transition: all 0.3s ease;
+}
+
+/* ====== 🔸 Encabezado del calendario ====== */
+.calendar-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.calendar-header select {
+  background: var(--blanco);
+  border: 2px solid var(--azul-borde);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 1rem;
+  color: var(--azul-oscuro);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+.calendar-header select:hover {
+  background: var(--azul-borde);
+  color: var(--blanco);
+  transform: scale(1.05);
+}
+
+/* ====== 🗓️ DÍAS ====== */
+.days-header,
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  gap: 6px; /* 🔹 Menor espacio entre cuadros */
+}
+
+.days-header div {
+  background: var(--azul-oscuro);
+  color: var(--blanco);
+  font-weight: bold;
+  padding: 10px 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.days div {
+  min-height: 80px; /* 🔹 Más compacto */
+  padding: 12px 0;
+  background: var(--blanco);
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.days div:hover {
+  background: rgba(110, 193, 228, 0.25);
+  transform: translateY(-2px);
+}
+
+.days div.event-day {
+  background: rgba(0, 174, 239, 0.15);
+  border: 2px solid var(--azul-borde);
+  font-weight: 700;
+  color: var(--azul-oscuro);
+  box-shadow: 0 0 8px rgba(0, 174, 239, 0.25);
+}
+
+/* ====== 🪟 MODAL ====== */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--blanco);
+  padding: 30px 25px;
+  border-radius: 18px;
+  width: 420px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  animation: popIn 0.4s ease;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--gris);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.close:hover {
+  color: var(--rojo);
+  transform: scale(1.1);
+}
+
+.modal-content h2 {
+  color: var(--azul-oscuro);
+  margin-bottom: var(--spacing-md);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: 1.5px solid #ccc;
+  border-radius: 10px;
+  margin-bottom: var(--spacing-md);
+  font-size: 0.95rem;
+  font-family: var(--font-family);
+  transition: border-color 0.3s ease;
+}
+.modal-content input:focus,
+.modal-content textarea:focus {
+  border-color: var(--azul-borde);
+  outline: none;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+button {
+  border: none;
+  background: var(--azul-borde);
+  color: var(--blanco);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+button:hover {
+  background: var(--azul-oscuro);
+}
+
+button.eliminar {
+  background: var(--rojo);
+}
+button.eliminar:hover {
+  background: #b71c1c;
+}
+
+/* ====== 🔁 Navegación Mes ====== */
+.nav-btn {
+  background: var(--azul-oscuro);
+  color: var(--blanco);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.nav-btn:hover {
+  background: var(--azul-borde);
+}
+
+#monthYear {
+  color: var(--azul-oscuro);
+  font-weight: 700;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+/* Colores por tipo de evento */
+.evento-examen { background: #fdecea; border: 2px solid var(--rojo); }
+.evento-reunion { background: #fff4e5; border: 2px solid #f0ad4e; }
+.evento-feriado { background: #e6f4ea; border: 2px solid #28a745; }
+.evento-otro { background: #e9f2fd; border: 2px solid var(--celeste); }
+
+/* ====== ✨ Animaciones ====== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* ====== 📱 RESPONSIVE ====== */
+@media (max-width: 768px) {
+  .calendario {
+    width: 95%;
+    padding: 25px 20px;
+  }
+
+  .days-header div,
+  .days div {
+    font-size: 0.8rem;
+    min-height: 65px;
+  }
+
+  #monthYear {
+    font-size: 1.2rem;
+  }
+}

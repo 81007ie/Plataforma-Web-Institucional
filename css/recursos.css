@@ -1,0 +1,447 @@
+/* ========================================================
+   🎨 ESTILOS GENERALES
+======================================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+}
+
+body {
+  background-color: var(--blanco);
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--gris);
+}
+
+/* ========================================================
+   🔹 NAVBAR SUPERIOR
+======================================================== */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: var(--celeste);
+  color: var(--azul-oscuro);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  transition: background 0.3s;
+}
+
+.navbar .logo {
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--blanco);
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 20px;
+}
+
+.nav-links a {
+  color: var(--blanco);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: var(--azul-borde);
+}
+
+.logout-btn {
+  background-color: var(--rojo);
+  border: none;
+  color: var(--blanco);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+.logout-btn:hover {
+  opacity: 0.9;
+}
+
+/* ========================================================
+   📂 SIDEBAR IZQUIERDA
+======================================================== */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 250px;
+  height: calc(100vh - 60px);
+  background-color: var(--azul-borde);
+  padding: 20px 15px;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+}
+
+#category-list {
+  list-style: none;
+}
+
+.categoria-item {
+  margin-bottom: 10px;
+}
+
+.categoria-header {
+  background-color: var(--azul-oscuro);
+  color: var(--blanco);
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.categoria-header:hover {
+  background-color: var(--azul-borde);
+}
+
+.toggle-icon {
+  font-size: 14px;
+  transition: transform 0.3s;
+}
+
+.subcategoria-list {
+  display: none;
+  margin-left: 12px;
+  list-style: none;
+  padding-left: 5px;
+}
+
+.subcategoria-item {
+  background-color: #5aa0e0;
+  color: var(--blanco);
+  padding: 6px 10px;
+  margin: 4px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.subcategoria-item:hover {
+  background-color: #f44336;
+}
+
+/* Botones dentro del sidebar */
+.categoria-header button,
+.subcategoria-item button {
+  background-color: var(--rojo);
+  color: white;
+  border: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 6px;
+  transition: opacity 0.3s;
+}
+
+.categoria-header button:hover,
+.subcategoria-item button:hover {
+  opacity: 0.9;
+}
+
+/* ========================================================
+   🧩 PANEL ADMIN (solo administrativos)
+======================================================== */
+.admin-panel {
+  background: var(--blanco);
+  border: 2px solid var(--azul-borde);
+  border-radius: 10px;
+  margin-top: 20px;
+  padding: 15px;
+  display: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.admin-panel h3 {
+  color: var(--azul-oscuro);
+  margin-bottom: 10px;
+}
+
+.admin-panel input,
+.admin-panel select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.admin-panel button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--azul-oscuro);
+  color: var(--blanco);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.admin-panel button:hover {
+  background-color: var(--azul-borde);
+}
+
+/* ========================================================
+   📄 CONTENIDO PRINCIPAL MEJORADO
+======================================================== */
+.main-content {
+  margin-left: 250px;
+  margin-top: 60px;
+  padding: 30px 25px;
+  width: calc(100% - 250px);
+  overflow-y: auto;
+  background: linear-gradient(135deg, #f9f9f9, #ffffff);
+}
+
+#resource-list h2 {
+  color: var(--azul-oscuro);
+  margin-bottom: 25px;
+  font-size: 24px;
+  font-weight: 700;
+  border-bottom: 2px solid var(--azul-borde);
+  padding-bottom: 8px;
+}
+
+.recurso-item {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 6px 8px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-left: 5px solid var(--azul-borde);
+}
+
+.recurso-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+}
+
+.recurso-item strong {
+  color: var(--azul-borde);
+  font-weight: 600;
+}
+
+.recurso-item p {
+  color: #555;
+  margin: 6px 0;
+  line-height: 1.6;
+}
+
+.recurso-item a {
+  color: var(--azul-oscuro);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 8px;
+  transition: all 0.3s;
+}
+
+.recurso-item a:hover {
+  text-decoration: underline;
+  color: var(--celeste);
+}
+
+.recurso-item .autor {
+  font-size: 13px;
+  color: #888;
+  margin-top: 10px;
+}
+
+.recurso-item .tipo {
+  display: inline-block;
+  font-size: 12px;
+  background: var(--celeste);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.recurso-item .tipo:hover {
+  background: var(--azul-borde);
+}
+
+
+/* ========================================================
+   ➕ BOTÓN AGREGAR RECURSO
+======================================================== */
+#add-resource-btn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background-color: var(--azul-oscuro);
+  color: var(--blanco);
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  display: none;
+  font-weight: bold;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.2);
+  transition: all 0.3s;
+}
+
+#add-resource-btn:hover {
+  background-color: var(--azul-borde);
+  transform: translateY(-2px);
+}
+
+/* ========================================================
+   💬 MODAL PARA AGREGAR RECURSO
+======================================================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content {
+  background-color: var(--blanco);
+  padding: 25px;
+  border-radius: 12px;
+  width: 380px;
+  position: relative;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  transition: all 0.3s;
+}
+
+.modal-content h2 {
+  color: var(--azul-oscuro);
+  margin-bottom: 20px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.modal-content button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--azul-borde);
+  color: var(--blanco);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.modal-content button:hover {
+  background-color: var(--azul-oscuro);
+}
+
+#close-modal {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--rojo);
+  transition: color 0.3s;
+}
+
+#close-modal:hover {
+  color: #b71c1c;
+}
+
+/* ========================================================
+   ⚠️ MODAL DE CONFIRMACIÓN ELIMINAR
+======================================================== */
+.modal-contenido {
+  background-color: var(--blanco);
+  padding: 25px;
+  border-radius: 12px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.modal-contenido h2 {
+  color: var(--rojo);
+  margin-bottom: 15px;
+}
+
+.modal-contenido .botones {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.btn-rojo {
+  background-color: var(--rojo);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.btn-rojo:hover {
+  background-color: #c62828;
+}
+
+#cancelarEliminarBtn {
+  background-color: #ccc;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+#cancelarEliminarBtn:hover {
+  background-color: #999;
+}
+
+.oculto {
+  display: none;
+}
+
+/* ========================================================
+   ✨ ANIMACIONES
+======================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
