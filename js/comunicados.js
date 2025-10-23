@@ -89,9 +89,10 @@ document.getElementById("form-comunicado")?.addEventListener("submit", async (e)
 });
 
 // ==========================
-// 🔹 Editar / Eliminar comunicados
+// 🔹 Editar / Eliminar comunicados (sin prompt feo 😄)
 // ==========================
 function agregarEventosCRUD() {
+  // 🗑️ Eliminar comunicado
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -102,6 +103,7 @@ function agregarEventosCRUD() {
     });
   });
 
+  // ✏️ Editar comunicado con modal
   document.querySelectorAll(".edit-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -109,21 +111,68 @@ function agregarEventosCRUD() {
       const h3 = div.querySelector("h3");
       const p = div.querySelector("p");
       const fechaSmall = div.querySelector("small");
+      const fechaActual = fechaSmall.textContent.split("—")[0].replace("📅 ", "").trim();
 
-      const nuevoTitulo = prompt("Nuevo título:", h3.textContent);
-      const nuevaDescripcion = prompt("Nueva descripción:", p.textContent);
-      const nuevaFecha = prompt("Nueva fecha (YYYY-MM-DD):", fechaSmall.textContent.split("—")[0].replace("📅 ", "").trim());
+      // Crear modal
+      const modal = document.createElement("div");
+      modal.className = "modal-editar";
+      modal.innerHTML = `
+        <div class="modal-contenido">
+          <h2>Editar Comunicado</h2>
+          <label>Título:</label>
+          <input type="text" id="edit-titulo" value="${h3.textContent}">
+          <label>Descripción:</label>
+          <textarea id="edit-descripcion">${p.textContent}</textarea>
+          <label>Fecha:</label>
+          <input type="date" id="edit-fecha" value="${formatearInputDate(fechaActual)}">
+          <div class="modal-botones">
+            <button id="guardar-cambios">Guardar</button>
+            <button id="cancelar">Cancelar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
 
-      if (nuevoTitulo && nuevaDescripcion && nuevaFecha) {
+      // Cerrar modal
+      modal.querySelector("#cancelar").addEventListener("click", () => modal.remove());
+
+      // Guardar cambios
+      modal.querySelector("#guardar-cambios").addEventListener("click", async () => {
+        const nuevoTitulo = document.getElementById("edit-titulo").value.trim();
+        const nuevaDescripcion = document.getElementById("edit-descripcion").value.trim();
+        const nuevaFecha = document.getElementById("edit-fecha").value;
+
+        if (!nuevoTitulo || !nuevaDescripcion || !nuevaFecha) {
+          alert("Completa todos los campos.");
+          return;
+        }
+
         await updateDoc(doc(db, "comunicados", id), {
           titulo: nuevoTitulo,
           descripcion: nuevaDescripcion,
           fecha: nuevaFecha
         });
+
+        modal.remove();
         cargarComunicados();
-      }
+      });
     });
   });
+}
+
+// 🔹 Función para convertir fecha legible a formato input
+function formatearInputDate(fechaLegible) {
+  const partes = fechaLegible.split(" ");
+  if (partes.length < 3) return "";
+  const dia = partes[0];
+  const mes = partes[1];
+  const año = partes[2];
+  const meses = {
+    enero: "01", febrero: "02", marzo: "03", abril: "04",
+    mayo: "05", junio: "06", julio: "07", agosto: "08",
+    septiembre: "09", octubre: "10", noviembre: "11", diciembre: "12"
+  };
+  return `${año}-${meses[mes.toLowerCase()]}-${dia.padStart(2, "0")}`;
 }
 
 // ==========================

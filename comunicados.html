@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Comunicados</title>
   <link rel="icon" type="image/png" href="img/logo.png" />
-  
+
   <link rel="stylesheet" href="css/colors.css" />
   <link rel="stylesheet" href="css/comunicados.css" />
 </head>
@@ -38,6 +38,18 @@
       <div id="lista-comunicados"></div>
     </section>
   </main>
+
+  <!-- 🧩 Modal para editar comunicado -->
+  <div id="modalEditar" class="modal">
+    <div class="modal-content">
+      <h3>Editar Comunicado</h3>
+      <textarea id="nuevoTexto" rows="4" placeholder="Escribe el nuevo texto..."></textarea>
+      <div class="modal-actions">
+        <button id="guardarCambios">Guardar</button>
+        <button id="cancelarEdicion">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/comunicados.js"></script>
 </body>
