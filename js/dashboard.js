@@ -10,7 +10,7 @@ const listaComunicados = document.getElementById("lista-comunicados");
 // 🔹 Detectar autenticación
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "../html/login.html";
+    window.location.href = "login.html";
     return;
   }
 
@@ -29,7 +29,7 @@ onAuthStateChanged(auth, async (user) => {
 // 🔹 Cerrar sesión
 btnLogout.addEventListener("click", async () => {
   await signOut(auth);
-  window.location.href = "../html/login.html";
+  window.location.href = "login.html";
 });
 
 // 🔹 Función para ocultar elementos de admin
