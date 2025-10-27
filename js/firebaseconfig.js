@@ -5,7 +5,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase
 
 //plataforma-web-institucional: Firebase web app
 const firebaseconfig = {
-  apiKey: "AIzaSyDdk-TJdQOWJuQWeV8Nx0sjTUqa1PajI38",
+  apiKey: "AIzaSyB9eqw-2YIGJpUviADaDWiG4CSNzi8N884",
   authDomain: "plataforma-institucional-81007.firebaseapp.com",
   projectId: "plataforma-institucional-81007",
   storageBucket: "plataforma-institucional-81007.firebasestorage.app",
