@@ -13,7 +13,8 @@ const usuarioInfo = document.getElementById("usuarioInfo");
 // ======================================================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    alert("Debes iniciar sesión");
+    //alert("Debes iniciar sesión");
+    alert("Estás saliendo de tu cuenta...");
     window.location.href = "login.html";
     return;
   }
