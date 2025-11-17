@@ -7,38 +7,34 @@
   <link rel="icon" type="image/png" href="img/logo.png">
 
   <link rel="stylesheet" href="css/colors.css">
-   <link rel="stylesheet" href="css/perfil.css">
+  <link rel="stylesheet" href="css/perfil.css">
 </head>
 <body>
   <!-- 🔹 Navbar -->
   <nav class="navbar">
-  <div class="logo">Perfil</div>
-  <ul class="nav-links">
-    <li><a href="dashboard.html">Inicio</a></li>
-    <!--<li><a href="recursos.html">Recursos</a></li>-->
-    <!--<li><a href="biblioteca.html">Biblioteca</a></li>-->
-  </ul>
-  <!-- Botón de cerrar sesión -->
-  <button id="btnCerrar">Cerrar sesión</button>
-</nav>
+    <div class="logo">Perfil</div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html">Inicio</a></li>
+    </ul>
+    <button id="btnCerrar">Cerrar sesión</button>
+  </nav>
 
   <!-- 🔹 Contenido principal -->
   <main>
     <h1 id="titulo-pantalla"></h1>
     <div id="contenido"></div>
-    <!-- La tabla y buscador se generan dinámicamente por JS -->
   </main>
 
-  <!-- 🔹 Modal para editar profesores -->
-  <div id="modal-profesor" class="modal">
+  <!-- 🔹 Modal editar usuario -->
+  <div id="modal-usuario" class="modal">
     <div class="modal-content">
-      <h2 id="modal-titulo">Editar Profesor</h2>
+      <h2 id="modal-titulo">Editar Usuario</h2>
       <label>Nombre: <input type="text" id="nombre-input"></label>
       <label>Correo: <input type="email" id="correo-input"></label>
       <label>Grado/Salón: <input type="text" id="grado-input"></label>
       <label>Nivel: <input type="text" id="nivel-input"></label>
       <div class="modal-actions">
-        <button onclick="guardarProfesor()">Guardar</button>
+        <button onclick="guardarUsuario()">Guardar</button>
         <button onclick="cerrarModal()">Cancelar</button>
       </div>
     </div>

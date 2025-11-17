@@ -11,7 +11,7 @@
 </head>
 <body>
   <div class="register-container">
-    <h2>Registro de Profesor(a)</h2>
+    <h2>Registro de Usuario</h2>
 
     <form id="formRegistro">
       <input id="nombre" type="text" placeholder="Nombre Completo" required />
@@ -21,7 +21,14 @@
       <select id="nivel" required>
         <option value="Primaria">Primaria</option>
         <option value="Secundaria">Secundaria</option>
-        <option value="Ambos">Ambos</option>
+      </select>
+
+      <label for="rol">Rol</label><br/>
+      <select id="rol" required>
+        <option value="Profesor">Profesor(a)</option>
+        <option value="Auxiliar">Auxiliar</option>
+        <option value="Toe">Toe</option>
+        <option value="Subdirector">Subdirector(a)</option>
       </select>
 
       <input id="email" type="email" placeholder="Correo Electrónico" required />
@@ -38,6 +45,13 @@
       </div>
     </form>
   </div>
+  
+  <!-- Loader de carga -->
+<div id="loader" class="loader-overlay" style="display: none;">
+  <div class="spinner"></div>
+  <p>Registrando usuario...</p>
+</div>
+
 
   <script type="module" src="js/registro.js"></script>
 </body>

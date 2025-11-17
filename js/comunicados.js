@@ -1,63 +1,69 @@
 import { db } from "./firebaseconfig.js";
-import { 
-  collection, addDoc, getDocs, deleteDoc, updateDoc, doc, serverTimestamp, query, orderBy 
+import {
+  collection, addDoc, getDocs, deleteDoc, updateDoc, doc,
+  serverTimestamp, query, orderBy, onSnapshot, enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// 🔹 Obtener usuario desde localStorage
+// ======================================================
+// 🔹 PERSISTENCIA LOCAL
+// ======================================================
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code === "failed-precondition") {
+    console.warn("⚠️ Persistencia deshabilitada: múltiples pestañas abiertas al mismo tiempo.");
+  } else if (err.code === "unimplemented") {
+    console.warn("⚠️ Este navegador no soporta IndexedDB (modo privado o versión antigua).");
+  }
+});
+
+// ======================================================
+// 🔹 VARIABLES Y CONFIGURACIÓN
+// ======================================================
 const usuario = JSON.parse(localStorage.getItem("usuario"));
 const formularioSection = document.getElementById("formulario-section");
 const listaComunicados = document.getElementById("lista-comunicados");
 
-// Redirigir si no hay usuario
 if (!usuario) window.location.href = "login.html";
 else if (usuario.rol === "Administrativo") formularioSection.classList.remove("oculto");
 
-// 🔹 Referencia a colección
 const comunicadosRef = collection(db, "comunicados");
+let cacheComunicados = [];
+let ultimaActualizacion = 0;
 
-// ==========================
-// 🔹 Función para formatear fechas
-// ==========================
+// ======================================================
+// 🔹 FORMATEAR FECHA
+// ======================================================
 function formatearFecha(fechaStr) {
   const fecha = new Date(fechaStr + "T00:00:00");
   return fecha.toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" });
 }
 
-// ==========================
-// 🔹 Cargar comunicados
-// ==========================
-async function cargarComunicados() {
-  listaComunicados.innerHTML = "<p>Cargando comunicados...</p>";
-
-  const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
-  const snapshot = await getDocs(q);
-
+// ======================================================
+// 🔹 RENDERIZAR COMUNICADOS
+// ======================================================
+function renderizarComunicados(datos) {
   listaComunicados.innerHTML = "";
 
-  if (snapshot.empty) {
+  if (datos.length === 0) {
     listaComunicados.innerHTML = "<p>No hay comunicados por el momento.</p>";
     return;
   }
 
-  snapshot.forEach((docu) => {
-    const data = docu.data();
+  datos.forEach((data) => {
     const div = document.createElement("div");
     div.className = "comunicado";
-
     const fechaFormateada = data.fecha ? formatearFecha(data.fecha) : "Desconocida";
 
     div.innerHTML = `
-      <div>
+      <div class="contenido">
         <h3>${data.titulo}</h3>
         <p>${data.descripcion}</p>
         <small>📅 ${fechaFormateada} — ✍️ ${data.creadoPor || "Desconocido"}</small>
       </div>
       ${usuario.rol === "Administrativo" ? `
         <div class="acciones">
-          <button class="edit-btn" data-id="${docu.id}">✏️</button>
-          <button class="delete-btn" data-id="${docu.id}">🗑️</button>
-        </div>
-      ` : ""}
+          <button class="edit-btn" data-id="${data.id}">✏️</button>
+          <button class="delete-btn" data-id="${data.id}">🗑️</button>
+        </div>` : ""}
     `;
     listaComunicados.appendChild(div);
   });
@@ -65,9 +71,47 @@ async function cargarComunicados() {
   agregarEventosCRUD();
 }
 
-// ==========================
-// 🔹 Guardar nuevo comunicado
-// ==========================
+// ======================================================
+// 🔹 CARGAR COMUNICADOS (con cache y limpieza)
+// ======================================================
+async function cargarComunicados(force = false) {
+  const ahora = Date.now();
+  const tiempoTranscurrido = (ahora - ultimaActualizacion) / 1000; // segundos
+
+  listaComunicados.innerHTML = "<p>Cargando comunicados...</p>";
+
+  // Usa cache si no se ha pasado 5 minutos o no se fuerza actualización
+  if (cacheComunicados.length > 0 && tiempoTranscurrido < 300 && !force) {
+    renderizarComunicados(cacheComunicados);
+    return;
+  }
+
+  try {
+    const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
+    const snapshot = await getDocs(q);
+
+    cacheComunicados = snapshot.docs.map(docu => ({
+      id: docu.id,
+      ...docu.data()
+    }));
+
+    ultimaActualizacion = Date.now();
+
+    // Mostrar primero los más recientes (ya ordenados desc)
+    renderizarComunicados(cacheComunicados);
+
+    // 🔹 Limpieza automática: mantener solo los 50 más recientes
+    if (cacheComunicados.length > 50) cacheComunicados.splice(50);
+
+  } catch (error) {
+    console.error("Error al cargar comunicados:", error);
+    listaComunicados.innerHTML = "<p>Error al cargar los comunicados.</p>";
+  }
+}
+
+// ======================================================
+// 🔹 GUARDAR NUEVO COMUNICADO
+// ======================================================
 document.getElementById("form-comunicado")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const titulo = document.getElementById("titulo").value.trim();
@@ -76,106 +120,124 @@ document.getElementById("form-comunicado")?.addEventListener("submit", async (e)
 
   if (!titulo || !fecha || !descripcion) return alert("Completa todos los campos.");
 
-  await addDoc(comunicadosRef, {
-    titulo,
-    descripcion,
-    fecha,
-    creadoPor: usuario.nombre,
-    fechaRegistro: serverTimestamp()
-  });
+  try {
+    const nuevoDoc = await addDoc(comunicadosRef, {
+      titulo,
+      descripcion,
+      fecha,
+      creadoPor: usuario.nombre,
+      fechaRegistro: serverTimestamp()
+    });
 
-  e.target.reset();
-  cargarComunicados();
+    cacheComunicados.unshift({
+      id: nuevoDoc.id,
+      titulo,
+      descripcion,
+      fecha,
+      creadoPor: usuario.nombre,
+      fechaRegistro: new Date()
+    });
+
+    e.target.reset();
+    renderizarComunicados(cacheComunicados);
+  } catch (error) {
+    console.error("Error al guardar comunicado:", error);
+  }
 });
 
-// ==========================
-// 🔹 Editar / Eliminar comunicados (sin prompt feo 😄)
-// ==========================
+// ======================================================
+// 🔹 CRUD: EDITAR / ELIMINAR
+// ======================================================
 function agregarEventosCRUD() {
   // 🗑️ Eliminar comunicado
   document.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      if (confirm("¿Eliminar este comunicado?")) {
-        await deleteDoc(doc(db, "comunicados", id));
-        cargarComunicados();
-      }
+      if (!confirm("¿Eliminar este comunicado?")) return;
+      await deleteDoc(doc(db, "comunicados", id));
+      cacheComunicados = cacheComunicados.filter(c => c.id !== id);
+      renderizarComunicados(cacheComunicados);
     });
   });
 
-  // ✏️ Editar comunicado con modal
+  // ✏️ Editar comunicado
   document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      const div = btn.closest(".comunicado");
-      const h3 = div.querySelector("h3");
-      const p = div.querySelector("p");
-      const fechaSmall = div.querySelector("small");
-      const fechaActual = fechaSmall.textContent.split("—")[0].replace("📅 ", "").trim();
-
-      // Crear modal
-      const modal = document.createElement("div");
-      modal.className = "modal-editar";
-      modal.innerHTML = `
-        <div class="modal-contenido">
-          <h2>Editar Comunicado</h2>
-          <label>Título:</label>
-          <input type="text" id="edit-titulo" value="${h3.textContent}">
-          <label>Descripción:</label>
-          <textarea id="edit-descripcion">${p.textContent}</textarea>
-          <label>Fecha:</label>
-          <input type="date" id="edit-fecha" value="${formatearInputDate(fechaActual)}">
-          <div class="modal-botones">
-            <button id="guardar-cambios">Guardar</button>
-            <button id="cancelar">Cancelar</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-
-      // Cerrar modal
-      modal.querySelector("#cancelar").addEventListener("click", () => modal.remove());
-
-      // Guardar cambios
-      modal.querySelector("#guardar-cambios").addEventListener("click", async () => {
-        const nuevoTitulo = document.getElementById("edit-titulo").value.trim();
-        const nuevaDescripcion = document.getElementById("edit-descripcion").value.trim();
-        const nuevaFecha = document.getElementById("edit-fecha").value;
-
-        if (!nuevoTitulo || !nuevaDescripcion || !nuevaFecha) {
-          alert("Completa todos los campos.");
-          return;
-        }
-
-        await updateDoc(doc(db, "comunicados", id), {
-          titulo: nuevoTitulo,
-          descripcion: nuevaDescripcion,
-          fecha: nuevaFecha
-        });
-
-        modal.remove();
-        cargarComunicados();
-      });
-    });
+    btn.addEventListener("click", () => abrirModalEdicion(btn.dataset.id));
   });
 }
 
-// 🔹 Función para convertir fecha legible a formato input
-function formatearInputDate(fechaLegible) {
-  const partes = fechaLegible.split(" ");
-  if (partes.length < 3) return "";
-  const dia = partes[0];
-  const mes = partes[1];
-  const año = partes[2];
-  const meses = {
-    enero: "01", febrero: "02", marzo: "03", abril: "04",
-    mayo: "05", junio: "06", julio: "07", agosto: "08",
-    septiembre: "09", octubre: "10", noviembre: "11", diciembre: "12"
-  };
-  return `${año}-${meses[mes.toLowerCase()]}-${dia.padStart(2, "0")}`;
+// ======================================================
+// 🔹 MODAL DE EDICIÓN (mejorado)
+// ======================================================
+function abrirModalEdicion(id) {
+  const comunicado = cacheComunicados.find(c => c.id === id);
+  if (!comunicado) return;
+
+  const modal = document.createElement("div");
+  modal.className = "modal-editar";
+  modal.innerHTML = `
+    <div class="modal-overlay"></div>
+    <div class="modal-contenido animar">
+      <h2>Editar Comunicado</h2>
+      <label>Título:</label>
+      <input type="text" id="edit-titulo" value="${comunicado.titulo}">
+      <label>Descripción:</label>
+      <textarea id="edit-descripcion">${comunicado.descripcion}</textarea>
+      <label>Fecha:</label>
+      <input type="date" id="edit-fecha" value="${comunicado.fecha}">
+      <div class="modal-botones">
+        <button id="guardar-cambios">Guardar</button>
+        <button id="cancelar">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Cerrar al hacer clic fuera
+  modal.querySelector(".modal-overlay").addEventListener("click", () => modal.remove());
+  modal.querySelector("#cancelar").addEventListener("click", () => modal.remove());
+
+  // Guardar cambios
+  modal.querySelector("#guardar-cambios").addEventListener("click", async () => {
+    const nuevoTitulo = document.getElementById("edit-titulo").value.trim();
+    const nuevaDescripcion = document.getElementById("edit-descripcion").value.trim();
+    const nuevaFecha = document.getElementById("edit-fecha").value;
+
+    if (!nuevoTitulo || !nuevaDescripcion || !nuevaFecha)
+      return alert("Completa todos los campos.");
+
+    await updateDoc(doc(db, "comunicados", id), {
+      titulo: nuevoTitulo,
+      descripcion: nuevaDescripcion,
+      fecha: nuevaFecha
+    });
+
+    const index = cacheComunicados.findIndex(c => c.id === id);
+    if (index !== -1) {
+      cacheComunicados[index] = { ...cacheComunicados[index], titulo: nuevoTitulo, descripcion: nuevaDescripcion, fecha: nuevaFecha };
+    }
+
+    modal.remove();
+    renderizarComunicados(cacheComunicados);
+  });
 }
 
-// ==========================
-// 🔹 Inicializar
-// ==========================
+// ======================================================
+// 🔹 ESCUCHAR CAMBIOS EN TIEMPO REAL
+// ======================================================
+function escucharActualizaciones() {
+  const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
+  onSnapshot(q, (snapshot) => {
+    const nuevos = snapshot.docs.map(docu => ({ id: docu.id, ...docu.data() }));
+    if (JSON.stringify(nuevos) !== JSON.stringify(cacheComunicados)) {
+      cacheComunicados = nuevos;
+      renderizarComunicados(cacheComunicados);
+    }
+  });
+}
+
+// ======================================================
+// 🔹 INICIALIZACIÓN
+// ======================================================
 cargarComunicados();
+escucharActualizaciones();

@@ -1,219 +1,212 @@
 import { auth, db } from "./firebaseconfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// 🔹 Elementos del DOM
-const contenido = document.getElementById("contenido");
-const tituloPantalla = document.getElementById("titulo-pantalla");
-const modal = document.getElementById("modal-profesor");
-const usuarioInfo = document.getElementById("usuarioInfo");
+// ---------------------------
+// CACHE GLOBAL
+// ---------------------------
+let cacheUsuarios = null;
+let cacheComunicados = null;
 
-// ======================================================
-// 🔹 Verificar sesión actual
-// ======================================================
+// ---------------------------
+// ROLES Y PERMISOS
+// ---------------------------
+const PERMISOS = {
+  Administrativo: {
+    verUsuarios: true,
+    crud: true,
+    verBuscador: true,
+    verComunicados: "todos"
+  },
+  Subdirector: {
+    verUsuarios: true,
+    crud: false,
+    verBuscador: true,
+    verComunicados: "todos"
+  },
+  Profesor: {
+    verUsuarios: false,
+    crud: false,
+    verBuscador: false,
+    verComunicados: "limitados"
+  },
+  Auxiliar: {
+    verUsuarios: false,
+    crud: false,
+    verBuscador: false,
+    verComunicados: "limitados"
+  },
+  Toe: {
+    verUsuarios: false,
+    crud: false,
+    verBuscador: false,
+    verComunicados: "limitados"
+  }
+};
+
+// ---------------------------
+// ON AUTH
+// ---------------------------
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    //alert("Debes iniciar sesión");
-    alert("Estás saliendo de tu cuenta...");
+  if (!user) return (window.location.href = "login.html");
+
+  const snap = await getDoc(doc(db, "usuarios", user.uid));
+  if (!snap.exists()) return alert("No se encontró tu perfil");
+
+  const usuario = snap.data();
+  cargarVista(usuario);
+
+  document.getElementById("btnCerrar").onclick = async () => {
+    await signOut(auth);
+    localStorage.clear();
     window.location.href = "login.html";
-    return;
-  }
-
-  // Obtener datos del usuario desde Firestore
-  const userRef = doc(db, "usuarios", user.uid);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    alert("No se encontraron tus datos en la base de datos");
-    return;
-  }
-
-  const usuario = userSnap.data();
-  tituloPantalla.textContent = `Perfil ${usuario.rol}`;
-
-  // Botón de cerrar sesión ya existe en HTML
-document.getElementById("btnCerrar").addEventListener("click", async () => {
-  await signOut(auth);
-  localStorage.clear();
-  window.location.href = "login.html";
+  };
 });
 
+// ---------------------------
+// MANEJADOR DE VISTAS SEGÚN ROL
+// ---------------------------
+async function cargarVista(usuario) {
+  const rol = usuario.rol;
+  const permisos = PERMISOS[rol];
 
-  // Renderizar según rol
-  if (usuario.rol === "Administrativo") renderAdmin(usuario);
-  else if (usuario.rol === "Profesor") renderProfesor(usuario);
-  else contenido.innerHTML = "<p>Rol no reconocido.</p>";
-});
-
-// ======================================================
-// 🔹 ADMINISTRATIVO (con buscador y columna Nivel)
-// ======================================================
-async function renderAdmin(usuario) {
   contenido.innerHTML = `
     <div class="info">
       <p>Nombre: <span>${usuario.nombre}</span></p>
-      <p>Rol: <span>${usuario.rol}</span></p>
+      <p>Rol: <span>${rol}</span></p>
+      <p>Correo: <span>${usuario.correo}</span></p>
     </div>
-    <h2>Lista de Profesores</h2>
+  `;
 
-    <!-- 🔍 Buscador -->
-    <input type="text" id="buscador" placeholder="Buscar profesor por nombre, correo o nivel..." style="width: 60%; padding: 8px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc;">
+  if (permisos.verUsuarios) await renderUsuarios(rol, permisos);
+  if (permisos.verComunicados) await renderComunicados(permisos.verComunicados);
+}
 
+// ---------------------------
+// USUARIOS (ADMIN / SUBDIRECTOR)
+// ---------------------------
+async function renderUsuarios(rol, permisos) {
+  contenido.innerHTML += `<h2>Lista de Usuarios</h2>`;
+
+  if (permisos.verBuscador) {
+    contenido.innerHTML += `
+      <input type="text" id="buscador" placeholder="Buscar..." 
+      style="width:60%; padding:8px; margin-bottom:10px;">
+    `;
+  }
+
+  contenido.innerHTML += `
     <table>
       <thead>
         <tr>
           <th>Nombre</th>
           <th>Correo</th>
-          <th>Grado/Salón/Materia</th>
+          <th>Rol</th>
           <th>Nivel</th>
-          <th>Acciones</th>
+          <th>Grado</th>
+          ${permisos.crud ? "<th>Acciones</th>" : ""}
         </tr>
       </thead>
-      <tbody id="lista-profesores"></tbody>
+      <tbody id="tablaUsuarios"></tbody>
     </table>
   `;
 
-  await renderProfesores();
-
-  // Agregar evento al buscador
-  const buscador = document.getElementById("buscador");
-  buscador.addEventListener("input", filtrarProfesores);
-}
-
-// Lista global para búsqueda
-let listaProfesores = [];
-
-// Renderiza la lista de profesores
-async function renderProfesores() {
-  const tbody = document.getElementById("lista-profesores");
-  tbody.innerHTML = "";
-
-  const querySnapshot = await getDocs(collection(db, "usuarios"));
-  listaProfesores = []; // reset lista
-
-  querySnapshot.forEach((docSnap) => {
-    const prof = docSnap.data();
-    if (prof.rol === "Profesor") {
-      listaProfesores.push({
-        id: docSnap.id,
-        nombre: prof.nombre,
-        correo: prof.correo,
-        grado: prof.grado || "-",
-        nivel: prof.nivel || "-" // ← nuevo campo
-      });
-    }
-  });
-
-  mostrarProfesores(listaProfesores);
-}
-
-// Muestra los profesores en la tabla
-function mostrarProfesores(lista) {
-  const tbody = document.getElementById("lista-profesores");
-  tbody.innerHTML = "";
-
-  if (lista.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5">No se encontraron profesores</td></tr>`;
-    return;
+  // Traer usuarios SOLO una vez
+  if (!cacheUsuarios) {
+    const snap = await getDocs(collection(db, "usuarios"));
+    cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  lista.forEach((prof) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${prof.nombre}</td>
-      <td>${prof.correo}</td>
-      <td>${prof.grado}</td>
-      <td>${prof.nivel}</td>
-      <td>
-        <button onclick="editarProfesor('${prof.id}', '${prof.nombre}', '${prof.correo}', '${prof.grado}', '${prof.nivel}')">Editar</button>
-        <button onclick="eliminarProfesor('${prof.id}')">Eliminar</button>
-      </td>
+  mostrarUsuarios(cacheUsuarios, permisos);
+
+  if (permisos.verBuscador) {
+    document.getElementById("buscador").oninput = (e) => {
+      const texto = e.target.value.toLowerCase();
+      const filtrados = cacheUsuarios.filter(u =>
+        u.nombre.toLowerCase().includes(texto) ||
+        u.correo.toLowerCase().includes(texto) ||
+        (u.nivel || "").toLowerCase().includes(texto)
+      );
+      mostrarUsuarios(filtrados, permisos);
+    };
+  }
+}
+
+function mostrarUsuarios(lista, permisos) {
+  const tbody = document.getElementById("tablaUsuarios");
+  tbody.innerHTML = "";
+
+  lista.forEach(u => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${u.nombre}</td>
+        <td>${u.correo}</td>
+        <td>${u.rol}</td>
+        <td>${u.nivel || "-"}</td>
+        <td>${u.grado || "-"}</td>
+        ${
+          permisos.crud
+            ? `<td>
+                <button onclick="editarUsuario('${u.id}')">Editar</button>
+                <button onclick="eliminarUsuario('${u.id}')">Eliminar</button>
+              </td>`
+            : ""
+        }
+      </tr>
     `;
-    tbody.appendChild(tr);
   });
 }
 
-// Filtra profesores por nombre, correo o nivel
-function filtrarProfesores(e) {
-  const texto = e.target.value.toLowerCase();
-  const filtrados = listaProfesores.filter(
-    (p) =>
-      p.nombre.toLowerCase().includes(texto) ||
-      p.correo.toLowerCase().includes(texto) ||
-      p.nivel.toLowerCase().includes(texto)
-  );
-  mostrarProfesores(filtrados);
-}
-
-// --- Modal acciones ---
-window.editarProfesor = (id, nombre, correo, grado, nivel) => {
-  document.getElementById("modal-titulo").textContent = "Editar Profesor";
-  document.getElementById("nombre-input").value = nombre;
-  document.getElementById("correo-input").value = correo;
-  document.getElementById("grado-input").value = grado;
-  document.getElementById("nivel-input").value = nivel; // nuevo input
-  modal.style.display = "flex";
-  modal.dataset.id = id;
+// ---------------------------
+// CRUD SOLO ADMINISTRATIVO
+// ---------------------------
+window.editarUsuario = (id) => {
+  if (!confirm("¿Editar usuario?")) return;
+  // aquí va tu modal o formulario (lo puedes reutilizar)
+  console.log("Editar:", id);
 };
 
-window.cerrarModal = () => {
-  modal.style.display = "none";
+window.eliminarUsuario = async (id) => {
+  if (!confirm("¿Eliminar usuario?")) return;
+  await deleteDoc(doc(db, "usuarios", id));
+
+  // actualizar cache local sin recargar de Firebase
+  cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
+  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
 };
 
-window.guardarProfesor = async () => {
-  const id = modal.dataset.id;
-  const nombre = document.getElementById("nombre-input").value;
-  const correo = document.getElementById("correo-input").value;
-  const grado = document.getElementById("grado-input").value;
-  const nivel = document.getElementById("nivel-input").value;
-  if (!nombre || !correo || !grado || !nivel) {
-    alert("Completa todos los campos");
-    return;
-  }
-
-  await updateDoc(doc(db, "usuarios", id), { nombre, correo, grado, nivel });
-  cerrarModal();
-  renderProfesores();
-};
-
-window.eliminarProfesor = async (id) => {
-  if (confirm("¿Desea eliminar este profesor?")) {
-    await deleteDoc(doc(db, "usuarios", id));
-    renderProfesores();
-  }
-};
-
-
-// ======================================================
-// 🔹 PROFESOR
-// ======================================================
-async function renderProfesor(usuario) {
-  contenido.innerHTML = `
-    <div class="info">
-      <p>Nombre: <span>${usuario.nombre}</span></p>
-      <p>Rol: <span>${usuario.rol}</span></p>
-      <p>Grado/Salón/Materia: <span>${usuario.grado || "-"}</span></p>
-      <p>Correo: <span>${usuario.correo}</span></p>
-    </div>
-    <h2>Comunicados Recientes</h2>
+// ---------------------------
+// COMUNICADOS
+// ---------------------------
+async function renderComunicados(tipo) {
+  contenido.innerHTML += `<h2>Comunicados</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
-      <tbody id="lista-comunicados"></tbody>
+      <tbody id="tablaComunicados"></tbody>
     </table>
   `;
 
-  const tbody = document.getElementById("lista-comunicados");
-  const comunicadosSnap = await getDocs(collection(db, "comunicados"));
-  const comunicados = [];
-  comunicadosSnap.forEach(doc => comunicados.push(doc.data()));
+  if (!cacheComunicados) {
+    const snap = await getDocs(query(collection(db, "comunicados"), orderBy("fecha", "desc")));
+    cacheComunicados = snap.docs.map(d => d.data());
+  }
 
-  const ultimos = comunicados.slice(-5).reverse();
-  ultimos.forEach(com => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${com.titulo}</td>
-      <td>${com.descripcion || "Sin descripción"}</td>
-      <td>${com.fecha}</td>
+  let lista = cacheComunicados;
+
+  if (tipo === "limitados") {
+    lista = lista.slice(0, 5);
+  }
+
+  const tbody = document.getElementById("tablaComunicados");
+  tbody.innerHTML = "";
+
+  lista.forEach(c => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.titulo}</td>
+        <td>${c.descripcion || "-"}</td>
+        <td>${c.fecha}</td>
+      </tr>
     `;
-    tbody.appendChild(tr);
   });
 }

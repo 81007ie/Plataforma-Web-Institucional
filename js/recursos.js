@@ -1,12 +1,28 @@
 import { auth, db } from "./firebaseconfig.js";
-import { 
-  collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp 
+import {
+  collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// ============================
+// 🔹 ROLES CON PERMISOS ADMIN
+// ============================
+//const rolesAdmin = ["Administrativo", "Auxiliar", "Toe", "Subdirector"];
+const rolesAdmin = ["Administrativo", "Subdirector"];
+
 
 // 🔐 Rol del usuario desde Auth
 let userRole = null;
 
-// Elementos DOM
+// ============================
+// 🔹 CACHE LOCAL EN MEMORIA
+// ============================
+const cacheCategorias = new Map();
+const cacheSubcategorias = new Map(); // key: catId
+const cacheRecursos = new Map(); // key: `${catId}-${subId}`
+
+// ============================
+// 🔹 ELEMENTOS DOM
+// ============================
 const categoryList = document.getElementById("category-list");
 const parentCategorySelect = document.getElementById("parent-category-select");
 const newCategoryInput = document.getElementById("new-category-name");
@@ -23,8 +39,6 @@ const resourceType = document.getElementById("resource-type");
 const resourceDesc = document.getElementById("resource-desc");
 const saveResourceBtn = document.getElementById("save-resource");
 const adminPanel = document.getElementById("admin-panel");
-
-// Modal confirmación
 const modalConfirm = document.getElementById("modalConfirmacion");
 const confirmarEliminarBtn = document.getElementById("confirmarEliminarBtn");
 const cancelarEliminarBtn = document.getElementById("cancelarEliminarBtn");
@@ -32,10 +46,10 @@ const cancelarEliminarBtn = document.getElementById("cancelarEliminarBtn");
 let currentCategory = null;
 let currentSubcategory = null;
 let editingResourceId = null;
-let eliminarCallback = null; // Función que se ejecutará si confirma eliminar
+let eliminarCallback = null;
 
 // ============================
-// 🔹 DETERMINAR ROL Y CARGAR DATOS
+// 🔹 AUTENTICACIÓN Y CARGA INICIAL
 // ============================
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
@@ -44,41 +58,40 @@ auth.onAuthStateChanged(async (user) => {
   }
 
   const userSnap = await getDocs(collection(db, "usuarios"));
-  userSnap.forEach(doc => {
-    if (doc.id === user.uid) userRole = doc.data().rol;
+  userSnap.forEach(docu => {
+    if (docu.id === user.uid) userRole = docu.data().rol;
   });
 
-  if (userRole !== "Administrativo") {
-    adminPanel.style.display = "none";
-    addResourceBtn.style.display = "none";
-  } else {
-    adminPanel.style.display = "block";
-    addResourceBtn.style.display = "block";
-  }
+  const tienePermisos = rolesAdmin.includes(userRole);
+
+  adminPanel.style.display = tienePermisos ? "block" : "none";
+  addResourceBtn.style.display = tienePermisos ? "block" : "none";
 
   loadCategories();
 });
 
 // ============================
-// 🔹 CARGAR CATEGORÍAS
+// 🔹 CARGAR CATEGORÍAS (OPTIMIZADO)
 // ============================
 async function loadCategories() {
-  const catSnap = await getDocs(collection(db, "categorias"));
-  const categorias = [];
-  catSnap.forEach(doc => categorias.push({ id: doc.id, ...doc.data() }));
-  renderCategories(categorias);
+  if (cacheCategorias.size === 0) {
+    const snap = await getDocs(collection(db, "categorias"));
+    snap.forEach(doc => cacheCategorias.set(doc.id, { id: doc.id, ...doc.data() }));
+  }
+  renderCategories([...cacheCategorias.values()]);
 }
 
 addCategoryBtn.addEventListener("click", async () => {
   const name = newCategoryInput.value.trim();
   if (!name) return alert("Ingresa el nombre de la categoría");
 
-  await addDoc(collection(db, "categorias"), {
+  const ref = await addDoc(collection(db, "categorias"), {
     nombre: name,
     descripcion: "",
     fechaCreacion: serverTimestamp()
   });
 
+  cacheCategorias.set(ref.id, { id: ref.id, nombre: name });
   newCategoryInput.value = "";
   loadCategories();
 });
@@ -86,31 +99,39 @@ addCategoryBtn.addEventListener("click", async () => {
 function deleteCategory(catId) {
   eliminarCallback = async () => {
     await deleteDoc(doc(db, "categorias", catId));
+    cacheCategorias.delete(catId);
+    cacheSubcategorias.delete(catId);
     loadCategories();
   };
   modalConfirm.style.display = "flex";
 }
 
 // ============================
-// 🔹 SUBCATEGORÍAS
+// 🔹 SUBCATEGORÍAS (OPTIMIZADO)
 // ============================
 async function loadSubcategories(catId) {
-  const subSnap = await getDocs(collection(db, "categorias", catId, "subcategorias"));
-  const subs = [];
-  subSnap.forEach(doc => subs.push({ id: doc.id, ...doc.data() }));
-  return subs;
+  if (!cacheSubcategorias.has(catId)) {
+    const snap = await getDocs(collection(db, "categorias", catId, "subcategorias"));
+    const list = [];
+    snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+    cacheSubcategorias.set(catId, list);
+  }
+  return cacheSubcategorias.get(catId);
 }
 
 addSubcategoryBtn.addEventListener("click", async () => {
   const parentId = parentCategorySelect.value;
   const name = newSubcategoryInput.value.trim();
-  if (!parentId || !name) return alert("Selecciona categoría y escribe el nombre de la subcategoría");
+  if (!parentId || !name) return alert("Selecciona categoría y escribe el nombre");
 
-  await addDoc(collection(db, "categorias", parentId, "subcategorias"), {
+  const ref = await addDoc(collection(db, "categorias", parentId, "subcategorias"), {
     nombre: name,
     descripcion: "",
     fechaCreacion: serverTimestamp()
   });
+
+  if (!cacheSubcategorias.has(parentId)) cacheSubcategorias.set(parentId, []);
+  cacheSubcategorias.get(parentId).push({ id: ref.id, nombre: name });
 
   newSubcategoryInput.value = "";
   loadCategories();
@@ -119,22 +140,33 @@ addSubcategoryBtn.addEventListener("click", async () => {
 function deleteSubcategory(catId, subId) {
   eliminarCallback = async () => {
     await deleteDoc(doc(db, "categorias", catId, "subcategorias", subId));
+    if (cacheSubcategorias.has(catId)) {
+      cacheSubcategorias.set(
+        catId,
+        cacheSubcategorias.get(catId).filter(s => s.id !== subId)
+      );
+    }
     loadCategories();
   };
   modalConfirm.style.display = "flex";
 }
 
 // ============================
-// 🔹 RECURSOS
+// 🔹 RECURSOS (OPTIMIZADO)
 // ============================
 async function loadResources(catId, subId) {
-  const resSnap = await getDocs(collection(db, "categorias", catId, "subcategorias", subId, "recursos"));
-  const recursos = [];
-  resSnap.forEach(doc => recursos.push({ id: doc.id, ...doc.data() }));
-  renderResources(recursos, catId, subId);
+  const key = `${catId}-${subId}`;
+
+  if (!cacheRecursos.has(key)) {
+    const snap = await getDocs(collection(db, "categorias", catId, "subcategorias", subId, "recursos"));
+    const list = [];
+    snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+    cacheRecursos.set(key, list);
+  }
+
+  renderResources(cacheRecursos.get(key), catId, subId);
 }
 
-// Modal agregar recurso
 addResourceBtn.addEventListener("click", () => {
   modal.style.display = "flex";
   resourceTitle.value = "";
@@ -148,31 +180,38 @@ closeModal.addEventListener("click", () => modal.style.display = "none");
 
 saveResourceBtn.addEventListener("click", async () => {
   if (!currentCategory || !currentSubcategory) return alert("Selecciona categoría y subcategoría");
+
   const titulo = resourceTitle.value.trim();
   const url = resourceLink.value.trim();
   const tipo = resourceType.value.trim();
   const descripcion = resourceDesc.value.trim();
+
   if (!titulo || !url || !tipo) return alert("Completa todos los campos");
 
   const ref = collection(db, "categorias", currentCategory, "subcategorias", currentSubcategory, "recursos");
+  const key = `${currentCategory}-${currentSubcategory}`;
 
   if (editingResourceId) {
     await setDoc(doc(ref, editingResourceId), {
-      titulo,
-      descripcion,
-      tipo,
-      url,
+      titulo, descripcion, tipo, url,
       autor: auth.currentUser.displayName || "Admin",
       fechaSubida: serverTimestamp()
     });
+
+    const arr = cacheRecursos.get(key);
+    const index = arr.findIndex(r => r.id === editingResourceId);
+    arr[index] = { id: editingResourceId, titulo, descripcion, tipo, url };
   } else {
-    await addDoc(ref, {
-      titulo,
-      descripcion,
-      tipo,
-      url,
+    const newDoc = await addDoc(ref, {
+      titulo, descripcion, tipo, url,
       autor: auth.currentUser.displayName || "Admin",
       fechaSubida: serverTimestamp()
+    });
+
+    if (!cacheRecursos.has(key)) cacheRecursos.set(key, []);
+    cacheRecursos.get(key).push({
+      id: newDoc.id,
+      titulo, descripcion, tipo, url
     });
   }
 
@@ -183,12 +222,19 @@ saveResourceBtn.addEventListener("click", async () => {
 function deleteResource(catId, subId, resId) {
   eliminarCallback = async () => {
     await deleteDoc(doc(db, "categorias", catId, "subcategorias", subId, "recursos", resId));
+
+    const key = `${catId}-${subId}`;
+    cacheRecursos.set(
+      key,
+      cacheRecursos.get(key).filter(r => r.id !== resId)
+    );
+
     loadResources(catId, subId);
   };
+
   modalConfirm.style.display = "flex";
 }
 
-// Editar recurso
 function editResource(res) {
   modal.style.display = "flex";
   resourceTitle.value = res.titulo;
@@ -213,7 +259,7 @@ function renderCategories(categorias) {
     header.classList.add("categoria-header");
     header.textContent = cat.nombre;
 
-    if (userRole === "Administrativo") {
+    if (rolesAdmin.includes(userRole)) {
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑";
       delBtn.classList.add("delete-btn");
@@ -251,7 +297,7 @@ function renderSubcategories(subs, ulContainer) {
     subLi.classList.add("subcategoria-item");
     subLi.textContent = sub.nombre;
 
-    if (userRole === "Administrativo") {
+    if (rolesAdmin.includes(userRole)) {
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑";
       delBtn.classList.add("delete-btn");
@@ -282,6 +328,7 @@ function renderResources(data, catId, subId) {
   data.forEach(r => {
     const card = document.createElement("div");
     card.classList.add("recurso-item");
+
     card.innerHTML = `
       <strong>${r.titulo}</strong>
       <p>${r.tipo}</p>
@@ -289,7 +336,7 @@ function renderResources(data, catId, subId) {
       <a href="${r.url}" target="_blank" class="view-btn">Ver/Descargar</a>
     `;
 
-    if (userRole === "Administrativo") {
+    if (rolesAdmin.includes(userRole)) {
       const edit = document.createElement("button");
       edit.textContent = "Editar";
       edit.classList.add("edit-btn");
@@ -309,7 +356,7 @@ function renderResources(data, catId, subId) {
 }
 
 // ============================
-// 🔹 MODAL CONFIRMACIÓN
+// 🔹 MODAL CONFIRMAR
 // ============================
 confirmarEliminarBtn.addEventListener("click", async () => {
   if (eliminarCallback) await eliminarCallback();
