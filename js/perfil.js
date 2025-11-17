@@ -1,16 +1,39 @@
 import { auth, db } from "./firebaseconfig.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-// ---------------------------
-// CACHE GLOBAL
-// ---------------------------
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// =========================
+// DOM ELEMENTS
+// =========================
+const contenido = document.getElementById("contenido");
+const modal = document.getElementById("modal-usuario");
+
+const nombreInput = document.getElementById("nombre-input");
+const correoInput = document.getElementById("correo-input");
+const gradoInput = document.getElementById("grado-input");
+const nivelInput = document.getElementById("nivel-input");
+
+// =========================
 let cacheUsuarios = null;
 let cacheComunicados = null;
+let usuarioEnEdicion = null;
 
-// ---------------------------
+// =========================
 // ROLES Y PERMISOS
-// ---------------------------
+// =========================
 const PERMISOS = {
   Administrativo: {
     verUsuarios: true,
@@ -44,9 +67,9 @@ const PERMISOS = {
   }
 };
 
-// ---------------------------
-// ON AUTH
-// ---------------------------
+// =========================
+// AUTENTICACIÓN
+// =========================
 onAuthStateChanged(auth, async (user) => {
   if (!user) return (window.location.href = "login.html");
 
@@ -63,40 +86,37 @@ onAuthStateChanged(auth, async (user) => {
   };
 });
 
-// ---------------------------
-// MANEJADOR DE VISTAS SEGÚN ROL
-// ---------------------------
+// =========================
+// CARGAR VISTA SEGÚN ROL
+// =========================
 async function cargarVista(usuario) {
-  const rol = usuario.rol;
-  const permisos = PERMISOS[rol];
+  const permisos = PERMISOS[usuario.rol];
 
+  // PERFIL DEL USUARIO
   contenido.innerHTML = `
-    <div class="info">
-      <p>Nombre: <span>${usuario.nombre}</span></p>
-      <p>Rol: <span>${rol}</span></p>
-      <p>Correo: <span>${usuario.correo}</span></p>
+    <div class="perfil-box">
+      <p><strong>Nombre:</strong> ${usuario.nombre}</p>
+      <p><strong>Rol:</strong> ${usuario.rol}</p>
+      <p><strong>Correo:</strong> ${usuario.correo}</p>
     </div>
   `;
 
-  if (permisos.verUsuarios) await renderUsuarios(rol, permisos);
+  if (permisos.verUsuarios) await renderUsuarios(usuario.rol, permisos);
   if (permisos.verComunicados) await renderComunicados(permisos.verComunicados);
 }
 
-// ---------------------------
-// USUARIOS (ADMIN / SUBDIRECTOR)
-// ---------------------------
+// =========================
+// MOSTRAR LISTA DE USUARIOS
+// =========================
 async function renderUsuarios(rol, permisos) {
-  contenido.innerHTML += `<h2>Lista de Usuarios</h2>`;
-
-  if (permisos.verBuscador) {
-    contenido.innerHTML += `
-      <input type="text" id="buscador" placeholder="Buscar..." 
-      style="width:60%; padding:8px; margin-bottom:10px;">
-    `;
-  }
-
   contenido.innerHTML += `
-    <table>
+    <h2>Lista de Usuarios</h2>
+
+    ${permisos.verBuscador ? `
+      <input type="text" id="buscador" placeholder="Buscar..." class="input-buscar">
+    ` : ""}
+
+    <table class="tabla">
       <thead>
         <tr>
           <th>Nombre</th>
@@ -111,47 +131,30 @@ async function renderUsuarios(rol, permisos) {
     </table>
   `;
 
-  // Traer usuarios SOLO una vez
   if (!cacheUsuarios) {
     const snap = await getDocs(collection(db, "usuarios"));
     cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  // Mostrar solo los primeros 10
-  mostrarUsuarios(cacheUsuarios.slice(0, 10), permisos);
+  mostrarUsuarios(cacheUsuarios, permisos);
 
-  // Buscador funcional
   if (permisos.verBuscador) {
-    document.getElementById("buscador").oninput = (e) => {
-      const texto = e.target.value.toLowerCase();
-
-      // Si está vacío → mostrar solo 10
-      if (texto.trim() === "") {
-        mostrarUsuarios(cacheUsuarios.slice(0, 10), permisos);
-        return;
-      }
-
-      const filtrados = cacheUsuarios.filter(u => {
-        const nombre = (u.nombre || "").toLowerCase();
-        const correo = (u.correo || "").toLowerCase();
-        const rol = (u.rol || "").toLowerCase();
-        const nivel = (u.nivel || "").toLowerCase();
-        const grado = (u.grado || "").toLowerCase();
-
-        return (
-          nombre.includes(texto) ||
-          correo.includes(texto) ||
-          rol.includes(texto) ||
-          nivel.includes(texto) ||
-          grado.includes(texto)
-        );
-      });
-
+    const buscador = document.getElementById("buscador");
+    buscador.oninput = () => {
+      const texto = buscador.value.toLowerCase();
+      const filtrados = cacheUsuarios.filter(u =>
+        u.nombre.toLowerCase().includes(texto) ||
+        u.correo.toLowerCase().includes(texto) ||
+        (u.nivel || "").toLowerCase().includes(texto)
+      );
       mostrarUsuarios(filtrados, permisos);
     };
   }
 }
 
+// =========================
+// RENDERIZAR TABLA USUARIOS
+// =========================
 function mostrarUsuarios(lista, permisos) {
   const tbody = document.getElementById("tablaUsuarios");
   tbody.innerHTML = "";
@@ -166,40 +169,84 @@ function mostrarUsuarios(lista, permisos) {
         <td>${u.grado || "-"}</td>
         ${
           permisos.crud
-            ? `<td>
-                <button onclick="editarUsuario('${u.id}')">Editar</button>
-                <button onclick="eliminarUsuario('${u.id}')">Eliminar</button>
-              </td>`
-            : ""
+          ? `<td>
+              <button onclick="editarUsuario('${u.id}')">Editar</button>
+              <button onclick="eliminarUsuario('${u.id}')">Eliminar</button>
+            </td>`
+          : ""
         }
       </tr>
     `;
   });
 }
 
-// ---------------------------
-// CRUD SOLO ADMINISTRATIVO
-// ---------------------------
+// =========================
+// EDITAR USUARIO – MODAL
+// =========================
 window.editarUsuario = (id) => {
-  if (!confirm("¿Editar usuario?")) return;
-  console.log("Editar:", id);
+  usuarioEnEdicion = cacheUsuarios.find(u => u.id === id);
+
+  nombreInput.value = usuarioEnEdicion.nombre;
+  correoInput.value = usuarioEnEdicion.correo;
+  nivelInput.value = usuarioEnEdicion.nivel || "";
+  gradoInput.value = usuarioEnEdicion.grado || "";
+
+  modal.style.display = "flex";
 };
 
+window.cerrarModal = () => {
+  modal.style.display = "none";
+};
+
+window.guardarUsuario = async () => {
+  const ref = doc(db, "usuarios", usuarioEnEdicion.id);
+
+  await updateDoc(ref, {
+    nombre: nombreInput.value,
+    correo: correoInput.value,
+    nivel: nivelInput.value,
+    grado: gradoInput.value
+  });
+
+  // actualizar cache
+  Object.assign(usuarioEnEdicion, {
+    nombre: nombreInput.value,
+    correo: correoInput.value,
+    nivel: nivelInput.value,
+    grado: gradoInput.value
+  });
+
+  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
+  modal.style.display = "none";
+};
+
+// =========================
+// ELIMINAR USUARIO
+// =========================
 window.eliminarUsuario = async (id) => {
   if (!confirm("¿Eliminar usuario?")) return;
+
   await deleteDoc(doc(db, "usuarios", id));
 
   cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
-  mostrarUsuarios(cacheUsuarios.slice(0, 10), PERMISOS["Administrativo"]);
+  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
 };
 
-// ---------------------------
-// COMUNICADOS
-// ---------------------------
+// =========================
+// MOSTRAR COMUNICADOS
+// =========================
 async function renderComunicados(tipo) {
-  contenido.innerHTML += `<h2>Comunicados</h2>
-    <table>
-      <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
+  contenido.innerHTML += `
+    <h2>Comunicados</h2>
+
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Descripción</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
       <tbody id="tablaComunicados"></tbody>
     </table>
   `;
@@ -210,10 +257,7 @@ async function renderComunicados(tipo) {
   }
 
   let lista = cacheComunicados;
-
-  if (tipo === "limitados") {
-    lista = lista.slice(0, 5);
-  }
+  if (tipo === "limitados") lista = lista.slice(0, 5);
 
   const tbody = document.getElementById("tablaComunicados");
   tbody.innerHTML = "";
