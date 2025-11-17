@@ -1,6 +1,6 @@
 import { auth, db } from "./firebaseconfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // ---------------------------
 // CACHE GLOBAL
@@ -117,25 +117,38 @@ async function renderUsuarios(rol, permisos) {
     cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  // Mostrar solo 10 usuarios al inicio
+  // Mostrar solo los primeros 10
   mostrarUsuarios(cacheUsuarios.slice(0, 10), permisos);
 
-  // Buscador funcional (con fix)
+  // Buscador funcional
   if (permisos.verBuscador) {
-    setTimeout(() => {
-      const buscador = document.getElementById("buscador");
-      if (!buscador) return;
+    document.getElementById("buscador").oninput = (e) => {
+      const texto = e.target.value.toLowerCase();
 
-      buscador.oninput = (e) => {
-        const texto = e.target.value.toLowerCase();
-        const filtrados = cacheUsuarios.filter(u =>
-          u.nombre.toLowerCase().includes(texto) ||
-          u.correo.toLowerCase().includes(texto) ||
-          (u.nivel || "").toLowerCase().includes(texto)
+      // Si está vacío → mostrar solo 10
+      if (texto.trim() === "") {
+        mostrarUsuarios(cacheUsuarios.slice(0, 10), permisos);
+        return;
+      }
+
+      const filtrados = cacheUsuarios.filter(u => {
+        const nombre = (u.nombre || "").toLowerCase();
+        const correo = (u.correo || "").toLowerCase();
+        const rol = (u.rol || "").toLowerCase();
+        const nivel = (u.nivel || "").toLowerCase();
+        const grado = (u.grado || "").toLowerCase();
+
+        return (
+          nombre.includes(texto) ||
+          correo.includes(texto) ||
+          rol.includes(texto) ||
+          nivel.includes(texto) ||
+          grado.includes(texto)
         );
-        mostrarUsuarios(filtrados, permisos);
-      };
-    }, 20);
+      });
+
+      mostrarUsuarios(filtrados, permisos);
+    };
   }
 }
 
@@ -177,7 +190,7 @@ window.eliminarUsuario = async (id) => {
   await deleteDoc(doc(db, "usuarios", id));
 
   cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
-  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
+  mostrarUsuarios(cacheUsuarios.slice(0, 10), PERMISOS["Administrativo"]);
 };
 
 // ---------------------------
