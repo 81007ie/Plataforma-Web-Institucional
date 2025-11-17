@@ -1,234 +1,205 @@
-import { db } from "./firebaseconfig.js";
+// ===============================
+// 📢 MÓDULO DE COMUNICADOS
+// ===============================
+
+import { auth, db } from "./firebaseconfig.js";
 import {
-  collection, addDoc, getDocs, deleteDoc, updateDoc, doc,
-  serverTimestamp, query, orderBy, onSnapshot, enableIndexedDbPersistence
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-
-
-// ======================================================
-// 🔹 VARIABLES Y CONFIGURACIÓN
-// ======================================================
-const usuario = JSON.parse(localStorage.getItem("usuario"));
-const formularioSection = document.getElementById("formulario-section");
+// =====================================
+// 🔹 ELEMENTOS DEL DOM
+// =====================================
+const form = document.getElementById("form-comunicado");
 const listaComunicados = document.getElementById("lista-comunicados");
+const formularioSection = document.getElementById("formulario-section");
 
-if (!usuario) window.location.href = "login.html";
-else if (usuario.rol === "Administrativo") formularioSection.classList.remove("oculto");
+// Modal del HTML
+const modalEditar = document.getElementById("modalEditar");
+const nuevoTexto = document.getElementById("nuevoTexto");
+const btnGuardarCambios = document.getElementById("guardarCambios");
+const btnCancelarEdicion = document.getElementById("cancelarEdicion");
 
-const comunicadosRef = collection(db, "comunicados");
+let idComunicadoEditando = null;
+
+// =====================================
+// 🔹 CACHE LOCAL
+// =====================================
 let cacheComunicados = [];
-let ultimaActualizacion = 0;
+let ultimoCache = 0;
 
-// ======================================================
-// 🔹 FORMATEAR FECHA
-// ======================================================
-function formatearFecha(fechaStr) {
-  const fecha = new Date(fechaStr + "T00:00:00");
-  return fecha.toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" });
+if (localStorage.getItem("comunicados_cache")) {
+  const data = JSON.parse(localStorage.getItem("comunicados_cache"));
+  cacheComunicados = data.comunicados || [];
+  ultimoCache = data.timestamp || 0;
+  renderizarComunicados(cacheComunicados);
 }
 
-// ======================================================
-// 🔹 RENDERIZAR COMUNICADOS
-// ======================================================
-function renderizarComunicados(datos) {
-  listaComunicados.innerHTML = "";
-
-  if (datos.length === 0) {
-    listaComunicados.innerHTML = "<p>No hay comunicados por el momento.</p>";
+// =====================================
+// 🔹 DETECTAR USUARIO Y ROL
+// =====================================
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "login.html";
     return;
   }
 
-  datos.forEach((data) => {
+  const storedUser = JSON.parse(localStorage.getItem("usuario"));
+
+  if (storedUser?.rol) {
+    controlarAccesos(storedUser.rol);
+  }
+
+  iniciarLecturaComunicados();
+});
+
+// =====================================
+// 🔹 ACCESO POR ROL
+// =====================================
+function controlarAccesos(rol) {
+  if (rol === "Administrativo" || rol === "Subdirector") {
+    formularioSection.classList.remove("oculto");
+  }
+}
+
+// =====================================
+// 🔹 LECTURA AUTOMÁTICA FIRESTORE
+// =====================================
+function iniciarLecturaComunicados() {
+  const ref = collection(db, "comunicados");
+
+  onSnapshot(ref, (snapshot) => {
+    const nuevos = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    nuevos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    cacheComunicados = nuevos;
+    renderizarComunicados(cacheComunicados);
+
+    localStorage.setItem(
+      "comunicados_cache",
+      JSON.stringify({ comunicados: nuevos, timestamp: Date.now() })
+    );
+  });
+}
+
+// =====================================
+// 🔹 RENDERIZAR COMUNICADOS
+// =====================================
+function renderizarComunicados(lista) {
+  listaComunicados.innerHTML = "";
+
+  if (lista.length === 0) {
+    listaComunicados.innerHTML = "<p class='vacio'>No hay comunicados aún.</p>";
+    return;
+  }
+
+  lista.forEach((item) => {
     const div = document.createElement("div");
     div.className = "comunicado";
-    const fechaFormateada = data.fecha ? formatearFecha(data.fecha) : "Desconocida";
 
     div.innerHTML = `
       <div class="contenido">
-        <h3>${data.titulo}</h3>
-        <p>${data.descripcion}</p>
-        <small>📅 ${fechaFormateada} — ✍️ ${data.creadoPor || "Desconocido"}</small>
+        <h3>${item.titulo}</h3>
+        <p>${item.descripcion}</p>
+        <span class="fecha">📅 ${item.fecha}</span>
       </div>
-      ${usuario.rol === "Administrativo" ? `
-        <div class="acciones">
-          <button class="edit-btn" data-id="${data.id}">✏️</button>
-          <button class="delete-btn" data-id="${data.id}">🗑️</button>
-        </div>` : ""}
+      <div class="acciones">
+        <button class="edit-btn">✏️</button>
+        <button class="delete-btn">🗑️</button>
+      </div>
     `;
+
+    div.querySelector(".edit-btn").onclick = () => abrirModalEdicion(item);
+    div.querySelector(".delete-btn").onclick = () =>
+      eliminarComunicado(item.id);
+
     listaComunicados.appendChild(div);
   });
-
-  agregarEventosCRUD();
 }
 
-// ======================================================
-// 🔹 CARGAR COMUNICADOS (con cache y limpieza)
-// ======================================================
-async function cargarComunicados(force = false) {
-  const ahora = Date.now();
-  const tiempoTranscurrido = (ahora - ultimaActualizacion) / 1000; // segundos
+// =====================================
+// 🔹 AGREGAR COMUNICADO
+// =====================================
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  listaComunicados.innerHTML = "<p>Cargando comunicados...</p>";
+  const titulo = form.titulo.value.trim();
+  const descripcion = form.descripcion.value.trim();
+  const fecha = form.fecha.value;
 
-  // Usa cache si no se ha pasado 5 minutos o no se fuerza actualización
-  if (cacheComunicados.length > 0 && tiempoTranscurrido < 300 && !force) {
-    renderizarComunicados(cacheComunicados);
+  if (!titulo || !descripcion || !fecha) {
+    alert("Completa todos los campos");
     return;
   }
 
-  try {
-    const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
-    const snapshot = await getDocs(q);
+  await addDoc(collection(db, "comunicados"), {
+    titulo,
+    descripcion,
+    fecha,
+    creadoPor: auth.currentUser.email,
+    fechaRegistro: serverTimestamp()
+  });
 
-    cacheComunicados = snapshot.docs.map(docu => ({
-      id: docu.id,
-      ...docu.data()
-    }));
-
-    ultimaActualizacion = Date.now();
-
-    // Mostrar primero los más recientes (ya ordenados desc)
-    renderizarComunicados(cacheComunicados);
-
-    // 🔹 Limpieza automática: mantener solo los 50 más recientes
-    if (cacheComunicados.length > 50) cacheComunicados.splice(50);
-
-  } catch (error) {
-    console.error("Error al cargar comunicados:", error);
-    listaComunicados.innerHTML = "<p>Error al cargar los comunicados.</p>";
-  }
-}
-
-// ======================================================
-// 🔹 GUARDAR NUEVO COMUNICADO
-// ======================================================
-document.getElementById("form-comunicado")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const titulo = document.getElementById("titulo").value.trim();
-  const fecha = document.getElementById("fecha").value;
-  const descripcion = document.getElementById("descripcion").value.trim();
-
-  if (!titulo || !fecha || !descripcion) return alert("Completa todos los campos.");
-
-  try {
-    const nuevoDoc = await addDoc(comunicadosRef, {
-      titulo,
-      descripcion,
-      fecha,
-      creadoPor: usuario.nombre,
-      fechaRegistro: serverTimestamp()
-    });
-
-    cacheComunicados.unshift({
-      id: nuevoDoc.id,
-      titulo,
-      descripcion,
-      fecha,
-      creadoPor: usuario.nombre,
-      fechaRegistro: new Date()
-    });
-
-    e.target.reset();
-    renderizarComunicados(cacheComunicados);
-  } catch (error) {
-    console.error("Error al guardar comunicado:", error);
-  }
+  form.reset();
 });
 
-// ======================================================
-// 🔹 CRUD: EDITAR / ELIMINAR
-// ======================================================
-function agregarEventosCRUD() {
-  // 🗑️ Eliminar comunicado
-  document.querySelectorAll(".delete-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.dataset.id;
-      if (!confirm("¿Eliminar este comunicado?")) return;
-      await deleteDoc(doc(db, "comunicados", id));
-      cacheComunicados = cacheComunicados.filter(c => c.id !== id);
-      renderizarComunicados(cacheComunicados);
-    });
-  });
-
-  // ✏️ Editar comunicado
-  document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", () => abrirModalEdicion(btn.dataset.id));
-  });
+// =====================================
+// 🔹 ELIMINAR COMUNICADO
+// =====================================
+async function eliminarComunicado(id) {
+  if (!confirm("¿Eliminar comunicado?")) return;
+  await deleteDoc(doc(db, "comunicados", id));
 }
 
-// ======================================================
-// 🔹 MODAL DE EDICIÓN (mejorado)
-// ======================================================
-function abrirModalEdicion(id) {
-  const comunicado = cacheComunicados.find(c => c.id === id);
-  if (!comunicado) return;
+// =====================================
+// 🔹 ABRIR MODAL DE EDICIÓN
+// =====================================
+function abrirModalEdicion(comunicado) {
+  idComunicadoEditando = comunicado.id;
 
-  const modal = document.createElement("div");
-  modal.className = "modal-editar";
-  modal.innerHTML = `
-    <div class="modal-overlay"></div>
-    <div class="modal-contenido animar">
-      <h2>Editar Comunicado</h2>
-      <label>Título:</label>
-      <input type="text" id="edit-titulo" value="${comunicado.titulo}">
-      <label>Descripción:</label>
-      <textarea id="edit-descripcion">${comunicado.descripcion}</textarea>
-      <label>Fecha:</label>
-      <input type="date" id="edit-fecha" value="${comunicado.fecha}">
-      <div class="modal-botones">
-        <button id="guardar-cambios">Guardar</button>
-        <button id="cancelar">Cancelar</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
+  nuevoTexto.value =
+    `Título: ${comunicado.titulo}\n\nDescripción:\n${comunicado.descripcion}\n\nFecha: ${comunicado.fecha}`;
 
-  // Cerrar al hacer clic fuera
-  modal.querySelector(".modal-overlay").addEventListener("click", () => modal.remove());
-  modal.querySelector("#cancelar").addEventListener("click", () => modal.remove());
-
-  // Guardar cambios
-  modal.querySelector("#guardar-cambios").addEventListener("click", async () => {
-    const nuevoTitulo = document.getElementById("edit-titulo").value.trim();
-    const nuevaDescripcion = document.getElementById("edit-descripcion").value.trim();
-    const nuevaFecha = document.getElementById("edit-fecha").value;
-
-    if (!nuevoTitulo || !nuevaDescripcion || !nuevaFecha)
-      return alert("Completa todos los campos.");
-
-    await updateDoc(doc(db, "comunicados", id), {
-      titulo: nuevoTitulo,
-      descripcion: nuevaDescripcion,
-      fecha: nuevaFecha
-    });
-
-    const index = cacheComunicados.findIndex(c => c.id === id);
-    if (index !== -1) {
-      cacheComunicados[index] = { ...cacheComunicados[index], titulo: nuevoTitulo, descripcion: nuevaDescripcion, fecha: nuevaFecha };
-    }
-
-    modal.remove();
-    renderizarComunicados(cacheComunicados);
-  });
+  modalEditar.style.display = "flex";
 }
 
-// ======================================================
-// 🔹 ESCUCHAR CAMBIOS EN TIEMPO REAL
-// ======================================================
-function escucharActualizaciones() {
-  const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
-  onSnapshot(q, (snapshot) => {
-    const nuevos = snapshot.docs.map(docu => ({ id: docu.id, ...docu.data() }));
-    if (JSON.stringify(nuevos) !== JSON.stringify(cacheComunicados)) {
-      cacheComunicados = nuevos;
-      renderizarComunicados(cacheComunicados);
-    }
-  });
-}
+// =====================================
+// 🔹 GUARDAR CAMBIOS
+// =====================================
+btnGuardarCambios.onclick = async () => {
+  if (!idComunicadoEditando) return;
 
-// ======================================================
-// 🔹 INICIALIZACIÓN
-// ======================================================
-cargarComunicados();
-escucharActualizaciones();
+  const texto = nuevoTexto.value.trim();
+  if (!texto) return alert("El comunicado no puede quedar vacío.");
+
+  const lineas = texto.split("\n");
+
+  const titulo = lineas[0].replace("Título: ", "").trim();
+  const descripcion = lineas[2].trim();
+  const fecha = lineas[4].replace("Fecha: ", "").trim();
+
+  await updateDoc(doc(db, "comunicados", idComunicadoEditando), {
+    titulo,
+    descripcion,
+    fecha
+  });
+
+  modalEditar.style.display = "none";
+};
+
+// =====================================
+// 🔹 CANCELAR
+// =====================================
+btnCancelarEdicion.onclick = () => {
+  modalEditar.style.display = "none";
+};

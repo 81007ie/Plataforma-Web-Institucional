@@ -1,6 +1,6 @@
 import { auth, db } from "./firebaseconfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // ---------------------------
 // CACHE GLOBAL
@@ -117,18 +117,25 @@ async function renderUsuarios(rol, permisos) {
     cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  mostrarUsuarios(cacheUsuarios, permisos);
+  // Mostrar solo 10 usuarios al inicio
+  mostrarUsuarios(cacheUsuarios.slice(0, 10), permisos);
 
+  // Buscador funcional (con fix)
   if (permisos.verBuscador) {
-    document.getElementById("buscador").oninput = (e) => {
-      const texto = e.target.value.toLowerCase();
-      const filtrados = cacheUsuarios.filter(u =>
-        u.nombre.toLowerCase().includes(texto) ||
-        u.correo.toLowerCase().includes(texto) ||
-        (u.nivel || "").toLowerCase().includes(texto)
-      );
-      mostrarUsuarios(filtrados, permisos);
-    };
+    setTimeout(() => {
+      const buscador = document.getElementById("buscador");
+      if (!buscador) return;
+
+      buscador.oninput = (e) => {
+        const texto = e.target.value.toLowerCase();
+        const filtrados = cacheUsuarios.filter(u =>
+          u.nombre.toLowerCase().includes(texto) ||
+          u.correo.toLowerCase().includes(texto) ||
+          (u.nivel || "").toLowerCase().includes(texto)
+        );
+        mostrarUsuarios(filtrados, permisos);
+      };
+    }, 20);
   }
 }
 
@@ -162,7 +169,6 @@ function mostrarUsuarios(lista, permisos) {
 // ---------------------------
 window.editarUsuario = (id) => {
   if (!confirm("¿Editar usuario?")) return;
-  // aquí va tu modal o formulario (lo puedes reutilizar)
   console.log("Editar:", id);
 };
 
@@ -170,7 +176,6 @@ window.eliminarUsuario = async (id) => {
   if (!confirm("¿Eliminar usuario?")) return;
   await deleteDoc(doc(db, "usuarios", id));
 
-  // actualizar cache local sin recargar de Firebase
   cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
   mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
 };
