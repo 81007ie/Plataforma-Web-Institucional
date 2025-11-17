@@ -10,6 +10,7 @@ import {
   updateDoc,
   deleteDoc,
   onSnapshot,
+  getDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
@@ -42,7 +43,7 @@ if (localStorage.getItem("comunicados_cache")) {
 }
 
 // =====================================
-// 🔹 DETECTAR USUARIO Y ROL
+// 🔹 DETECTAR USUARIO Y ROL (CORREGIDO)
 // =====================================
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
@@ -50,10 +51,14 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
 
-  const storedUser = JSON.parse(localStorage.getItem("usuario"));
+  // 🔥 Obtener rol desde Firestore (NO del localStorage)
+  const snap = await getDoc(doc(db, "usuarios", user.uid));
 
-  if (storedUser?.rol) {
-    controlarAccesos(storedUser.rol);
+  if (snap.exists()) {
+    const datosUsuario = snap.data();
+    controlarAccesos(datosUsuario.rol);
+  } else {
+    console.warn("⚠ No se encontró el documento del usuario en Firestore");
   }
 
   iniciarLecturaComunicados();
