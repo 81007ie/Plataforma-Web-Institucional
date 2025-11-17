@@ -5,16 +5,6 @@ import {
   enableIndexedDbPersistence
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// ============================
-// 🔸 ACTIVAR ALMACENAMIENTO LOCAL (IndexedDB)
-// ============================
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === "failed-precondition") {
-    console.warn("⚠️ Persistencia deshabilitada: múltiples pestañas abiertas al mismo tiempo.");
-  } else if (err.code === "unimplemented") {
-    console.warn("⚠️ Este navegador no soporta IndexedDB (modo privado o versión antigua).");
-  }
-});
 
 // ============================
 // 🔸 ELEMENTOS DEL DOM
