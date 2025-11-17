@@ -16,19 +16,23 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // =========================
-// DOM ELEMENTS
+// DOM
 // =========================
-const contenido = document.getElementById("contenido");
+const main = document.getElementById("main-content");
 const modal = document.getElementById("modal-usuario");
 
 const nombreInput = document.getElementById("nombre-input");
 const correoInput = document.getElementById("correo-input");
-const gradoInput = document.getElementById("grado-input");
 const nivelInput = document.getElementById("nivel-input");
+const gradoInput = document.getElementById("grado-input");
+
+const btnGuardar = document.getElementById("btnGuardar");
+const btnCancelar = document.getElementById("btnCancelar");
 
 // =========================
-let cacheUsuarios = null;
-let cacheComunicados = null;
+let cacheUsuarios = [];
+let cacheComunicados = [];
+let usuarioActual = null;
 let usuarioEnEdicion = null;
 
 // =========================
@@ -76,44 +80,54 @@ onAuthStateChanged(auth, async (user) => {
   const snap = await getDoc(doc(db, "usuarios", user.uid));
   if (!snap.exists()) return alert("No se encontró tu perfil");
 
-  const usuario = snap.data();
-  cargarVista(usuario);
+  usuarioActual = snap.data();
 
+  cargarVista();
+  prepararBotones();
+});
+
+// =========================
+// CONFIGURAR EVENTOS
+// =========================
+function prepararBotones() {
   document.getElementById("btnCerrar").onclick = async () => {
     await signOut(auth);
     localStorage.clear();
     window.location.href = "login.html";
   };
-});
+
+  btnCancelar.onclick = () => cerrarModal();
+  btnGuardar.onclick = () => guardarUsuario();
+}
 
 // =========================
 // CARGAR VISTA SEGÚN ROL
 // =========================
-async function cargarVista(usuario) {
-  const permisos = PERMISOS[usuario.rol];
+async function cargarVista() {
+  const permisos = PERMISOS[usuarioActual.rol];
 
-  // PERFIL DEL USUARIO
-  contenido.innerHTML = `
+  main.innerHTML = `
+    <h1>Perfil</h1>
     <div class="perfil-box">
-      <p><strong>Nombre:</strong> ${usuario.nombre}</p>
-      <p><strong>Rol:</strong> ${usuario.rol}</p>
-      <p><strong>Correo:</strong> ${usuario.correo}</p>
+      <p><strong>Nombre:</strong> ${usuarioActual.nombre}</p>
+      <p><strong>Correo:</strong> ${usuarioActual.correo}</p>
+      <p><strong>Rol:</strong> ${usuarioActual.rol}</p>
     </div>
   `;
 
-  if (permisos.verUsuarios) await renderUsuarios(usuario.rol, permisos);
-  if (permisos.verComunicados) await renderComunicados(permisos.verComunicados);
+  if (permisos.verUsuarios) await cargarUsuarios(permisos);
+  await cargarComunicados(permisos.verComunicados);
 }
 
 // =========================
-// MOSTRAR LISTA DE USUARIOS
+// USUARIOS
 // =========================
-async function renderUsuarios(rol, permisos) {
-  contenido.innerHTML += `
+async function cargarUsuarios(permisos) {
+  main.innerHTML += `
     <h2>Lista de Usuarios</h2>
 
     ${permisos.verBuscador ? `
-      <input type="text" id="buscador" placeholder="Buscar..." class="input-buscar">
+      <input id="buscador" class="input-buscar" type="text" placeholder="Buscar usuarios...">
     ` : ""}
 
     <table class="tabla">
@@ -131,31 +145,27 @@ async function renderUsuarios(rol, permisos) {
     </table>
   `;
 
-  if (!cacheUsuarios) {
+  if (!cacheUsuarios.length) {
     const snap = await getDocs(collection(db, "usuarios"));
     cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   }
 
-  mostrarUsuarios(cacheUsuarios, permisos);
+  renderUsuarios(cacheUsuarios, permisos);
 
   if (permisos.verBuscador) {
-    const buscador = document.getElementById("buscador");
-    buscador.oninput = () => {
-      const texto = buscador.value.toLowerCase();
+    document.getElementById("buscador").oninput = (e) => {
+      const txt = e.target.value.toLowerCase();
       const filtrados = cacheUsuarios.filter(u =>
-        u.nombre.toLowerCase().includes(texto) ||
-        u.correo.toLowerCase().includes(texto) ||
-        (u.nivel || "").toLowerCase().includes(texto)
+        u.nombre.toLowerCase().includes(txt) ||
+        u.correo.toLowerCase().includes(txt) ||
+        (u.nivel || "").toLowerCase().includes(txt)
       );
-      mostrarUsuarios(filtrados, permisos);
+      renderUsuarios(filtrados, permisos);
     };
   }
 }
 
-// =========================
-// RENDERIZAR TABLA USUARIOS
-// =========================
-function mostrarUsuarios(lista, permisos) {
+function renderUsuarios(lista, permisos) {
   const tbody = document.getElementById("tablaUsuarios");
   tbody.innerHTML = "";
 
@@ -169,21 +179,31 @@ function mostrarUsuarios(lista, permisos) {
         <td>${u.grado || "-"}</td>
         ${
           permisos.crud
-          ? `<td>
-              <button onclick="editarUsuario('${u.id}')">Editar</button>
-              <button onclick="eliminarUsuario('${u.id}')">Eliminar</button>
-            </td>`
-          : ""
+            ? `<td>
+                <button class="btn-edit" data-id="${u.id}">Editar</button>
+                <button class="btn-delete" data-id="${u.id}">Eliminar</button>
+              </td>`
+            : ""
         }
       </tr>
     `;
   });
+
+  if (permisos.crud) {
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+      btn.onclick = () => abrirModal(btn.dataset.id);
+    });
+
+    document.querySelectorAll(".btn-delete").forEach(btn => {
+      btn.onclick = () => eliminarUsuario(btn.dataset.id);
+    });
+  }
 }
 
 // =========================
-// EDITAR USUARIO – MODAL
+// MODAL
 // =========================
-window.editarUsuario = (id) => {
+function abrirModal(id) {
   usuarioEnEdicion = cacheUsuarios.find(u => u.id === id);
 
   nombreInput.value = usuarioEnEdicion.nombre;
@@ -192,13 +212,13 @@ window.editarUsuario = (id) => {
   gradoInput.value = usuarioEnEdicion.grado || "";
 
   modal.style.display = "flex";
-};
+}
 
-window.cerrarModal = () => {
+function cerrarModal() {
   modal.style.display = "none";
-};
+}
 
-window.guardarUsuario = async () => {
+async function guardarUsuario() {
   const ref = doc(db, "usuarios", usuarioEnEdicion.id);
 
   await updateDoc(ref, {
@@ -208,7 +228,6 @@ window.guardarUsuario = async () => {
     grado: gradoInput.value
   });
 
-  // actualizar cache
   Object.assign(usuarioEnEdicion, {
     nombre: nombreInput.value,
     correo: correoInput.value,
@@ -216,29 +235,32 @@ window.guardarUsuario = async () => {
     grado: gradoInput.value
   });
 
-  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
-  modal.style.display = "none";
-};
+  const permisos = PERMISOS[usuarioActual.rol];
+  renderUsuarios(cacheUsuarios, permisos);
+
+  cerrarModal();
+}
 
 // =========================
-// ELIMINAR USUARIO
+// ELIMINAR
 // =========================
-window.eliminarUsuario = async (id) => {
+async function eliminarUsuario(id) {
   if (!confirm("¿Eliminar usuario?")) return;
 
   await deleteDoc(doc(db, "usuarios", id));
 
   cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
-  mostrarUsuarios(cacheUsuarios, PERMISOS["Administrativo"]);
-};
+
+  const permisos = PERMISOS[usuarioActual.rol];
+  renderUsuarios(cacheUsuarios, permisos);
+}
 
 // =========================
-// MOSTRAR COMUNICADOS
+// COMUNICADOS
 // =========================
-async function renderComunicados(tipo) {
-  contenido.innerHTML += `
+async function cargarComunicados(tipo) {
+  main.innerHTML += `
     <h2>Comunicados</h2>
-
     <table class="tabla">
       <thead>
         <tr>
@@ -251,13 +273,14 @@ async function renderComunicados(tipo) {
     </table>
   `;
 
-  if (!cacheComunicados) {
-    const snap = await getDocs(query(collection(db, "comunicados"), orderBy("fecha", "desc")));
+  if (!cacheComunicados.length) {
+    const snap = await getDocs(
+      query(collection(db, "comunicados"), orderBy("fecha", "desc"))
+    );
     cacheComunicados = snap.docs.map(d => d.data());
   }
 
-  let lista = cacheComunicados;
-  if (tipo === "limitados") lista = lista.slice(0, 5);
+  let lista = tipo === "limitados" ? cacheComunicados.slice(0, 5) : cacheComunicados;
 
   const tbody = document.getElementById("tablaComunicados");
   tbody.innerHTML = "";
