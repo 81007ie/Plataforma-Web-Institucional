@@ -43,13 +43,13 @@ const PERMISOS = {
     verUsuarios: true,
     crud: true,
     verBuscador: true,
-    verComunicados: "todos"
+    verComunicados: "limitados"
   },
   Subdirector: {
     verUsuarios: true,
     crud: false,
     verBuscador: true,
-    verComunicados: "todos"
+    verComunicados: "limitados"
   },
   Profesor: {
     verUsuarios: false,
@@ -105,9 +105,13 @@ function prepararBotones() {
 // =========================
 async function cargarVista() {
   const permisos = PERMISOS[usuarioActual.rol];
+  document.getElementById("tituloPantalla").textContent =
+  `Perfil ${usuarioActual.rol}`;
+
 
   // PERFIL
   main.innerHTML = `
+  
     <h1>Perfil</h1>
     <div class="perfil-box">
       <p><strong>Nombre:</strong> ${usuarioActual.nombre}</p>
