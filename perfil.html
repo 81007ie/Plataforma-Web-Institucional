@@ -8,6 +8,9 @@
 
   <link rel="stylesheet" href="css/colors.css">
   <link rel="stylesheet" href="css/perfil.css">
+
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -20,41 +23,46 @@
     <button id="btnCerrar">Cerrar sesión</button>
   </nav>
 
-  <!-- 🔹 Título dinámico -->
   <h1 id="titulo-pantalla" style="text-align:center; margin-top:20px;"></h1>
 
-  <!-- 🔹 CONTENEDOR PRINCIPAL QUE USA TU JS -->
+  <!-- Contenido dinámico -->
   <main id="contenido"></main>
 
-  <!-- 🔹 Modal editar profesor (coincide con tu JS) -->
+  <!-- 🔹 MODAL -->
   <div id="modal-profesor" class="modal">
     <div class="modal-content">
-      <h2 id="modal-titulo">Editar Profesor</h2>
+
+      <h3 id="modal-titulo">Editar Usuario</h3>
 
       <label>Nombre:
-        <input type="text" id="nombre-input" autocomplete="off">
+        <input type="text" id="nombre-input">
       </label>
 
       <label>Correo:
-        <input type="email" id="correo-input" autocomplete="off">
+        <input type="email" id="correo-input">
       </label>
 
-      <label>Grado/Salón:
-        <input type="text" id="grado-input" autocomplete="off">
+      <label>Rol:
+        <input type="text" id="rol-input">
+      </label>
+
+      <label>Grado:
+        <input type="text" id="grado-input">
       </label>
 
       <label>Nivel:
-        <input type="text" id="nivel-input" autocomplete="off">
+        <input type="text" id="nivel-input">
       </label>
 
       <div class="modal-actions">
         <button onclick="guardarProfesor()">Guardar</button>
         <button onclick="cerrarModal()">Cancelar</button>
       </div>
+
     </div>
   </div>
 
-  <!-- 🔹 JS -->
+  <!-- JS -->
   <script type="module" src="js/perfil.js"></script>
 
 </body>

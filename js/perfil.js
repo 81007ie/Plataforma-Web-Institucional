@@ -1,14 +1,11 @@
+// ============================================
+// 🔥 MÓDULO PERFIL (Usuarios CRUD + Paginación)
+// ============================================
+
 import { auth, db } from "./firebaseconfig.js";
-
 import {
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-import {
-  doc,
-  getDoc,
   collection,
+  doc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -18,323 +15,228 @@ import {
   startAfter
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+// =================================================================
+// 🔹 VARIABLES DE PAGINACIÓN
+// =================================================================
+let lastVisible = null;
+let historyStack = [];
+const pageSize = 5;
 
-// ======================================================
-// 🔹 Elementos del DOM
-// ======================================================
+// =================================================================
+// 🔹 DOM
+// =================================================================
 const contenido = document.getElementById("contenido");
 const tituloPantalla = document.getElementById("titulo-pantalla");
-const modal = document.getElementById("modal-profesor");
 
-
-// ======================================================
-// 🔹 Verificar sesión actual
-// ======================================================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    alert("Estás saliendo de tu cuenta...");
-    window.location.href = "login.html";
-    return;
-  }
-
-  const userRef = doc(db, "usuarios", user.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) {
-    alert("No se encontraron tus datos en la base de datos");
-    return;
-  }
-
-  const usuario = userSnap.data();
-  tituloPantalla.textContent = `Perfil ${usuario.rol}`;
-
-  // Botón cerrar sesión
-  document.getElementById("btnCerrar").addEventListener("click", async () => {
-    await signOut(auth);
-    localStorage.clear();
-    window.location.href = "login.html";
-  });
-
-  // Render según rol
-  if (usuario.rol === "Administrativo") renderAdmin(usuario);
-  else if (usuario.rol === "Profesor") renderProfesor(usuario);
-  else contenido.innerHTML = "<p>Rol no reconocido.</p>";
-});
-
-
-// ======================================================
-// 🔹 ADMINISTRATIVO (solo 5 usuarios + paginación + búsqueda)
-// ======================================================
-let ultimaPaginaUsuarios = null; // para paginar
-
-async function renderAdmin(usuario) {
+// =================================================================
+// 🔹 CARGAR TABLA DINÁMICA
+// =================================================================
+function renderTabla() {
   contenido.innerHTML = `
-    <div class="info">
-      <p>Nombre: <span>${usuario.nombre}</span></p>
-      <p>Rol: <span>${usuario.rol}</span></p>
-    </div>
-
-    <h2>Lista de Profesores</h2>
-
-    <input type="text" id="buscador" placeholder="Buscar por nombre, correo, rol o nivel..."
-      style="width: 60%; padding: 8px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc;">
+    <input type="text" placeholder="Buscar usuario..." class="input-buscar" id="inputBuscar">
 
     <table>
       <thead>
         <tr>
           <th>Nombre</th>
           <th>Correo</th>
-          <th>Grado/Salón/Materia</th>
+          <th>Rol</th>
+          <th>Grado</th>
           <th>Nivel</th>
           <th>Acciones</th>
         </tr>
       </thead>
-      <tbody id="lista-profesores"></tbody>
+      <tbody id="tabla-usuarios"></tbody>
     </table>
 
-    <button id="btnVerMas" style="margin-top:10px; padding:8px;">Ver más</button>
+    <div style="margin-top: 15px; display:flex; gap:10px;">
+      <button id="btnAnterior">Anterior</button>
+      <button id="btnSiguiente">Siguiente</button>
+    </div>
   `;
-
-  document.getElementById("buscador").addEventListener("input", filtrarProfesores);
-
-  await cargarProfesoresRecientes();
-
-  document.getElementById("btnVerMas").addEventListener("click", cargarMasProfesores);
 }
 
+// Después del render, obtenemos los elementos
+let tableBody, btnAnterior, btnSiguiente;
 
-// ======================================================
-// 🔹 1. Cargar solo 5 recientes
-// ======================================================
-async function cargarProfesoresRecientes() {
-  const tbody = document.getElementById("lista-profesores");
-  tbody.innerHTML = "<tr><td colspan='5'>Cargando...</td></tr>";
-
-  const q = query(
-    collection(db, "usuarios"),
-    orderBy("fechaRegistro", "desc"),
-    limit(5)
-  );
-
-  const snap = await getDocs(q);
-
-  ultimaPaginaUsuarios = snap.docs[snap.docs.length - 1];
-
-  tbody.innerHTML = "";
-  snap.forEach((docSnap) => pintarProfesor(docSnap));
-}
-
-
-// ======================================================
-// 🔹 2. Cargar paginación (siguiente 5)
-// ======================================================
-async function cargarMasProfesores() {
-  if (!ultimaPaginaUsuarios) return;
-
-  const q = query(
-    collection(db, "usuarios"),
-    orderBy("fechaRegistro", "desc"),
-    startAfter(ultimaPaginaUsuarios),
-    limit(5)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    alert("No hay más profesores");
-    return;
+// =================================================================
+// 🔹 CARGAR USUARIOS (PAGINADO)
+// =================================================================
+async function cargarUsuarios(reset = false) {
+  if (reset) {
+    lastVisible = null;
+    historyStack = [];
   }
 
-  ultimaPaginaUsuarios = snap.docs[snap.docs.length - 1];
+  let que;
 
-  snap.forEach((docSnap) => pintarProfesor(docSnap));
-}
-
-
-// ======================================================
-// 🔹 Pintar profesor en tabla
-// ======================================================
-function pintarProfesor(docSnap) {
-  const p = docSnap.data();
-  if (p.rol !== "Profesor") return;
-
-  const tbody = document.getElementById("lista-profesores");
-
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${p.nombre}</td>
-    <td>${p.correo}</td>
-    <td>${p.grado || "-"}</td>
-    <td>${p.nivel || "-"}</td>
-    <td>
-      <button onclick="editarProfesor('${docSnap.id}', '${p.nombre}', '${p.correo}', '${p.grado}', '${p.nivel}')">Editar</button>
-      <button onclick="eliminarProfesor('${docSnap.id}')">Eliminar</button>
-    </td>
-  `;
-
-  tbody.appendChild(tr);
-}
-
-
-// ======================================================
-// 🔹 Búsqueda dinámica en Firestore
-// ======================================================
-async function filtrarProfesores(e) {
-  const texto = e.target.value.toLowerCase().trim();
-
-  if (texto === "") {
-    cargarProfesoresRecientes();
-    return;
+  if (lastVisible) {
+    que = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      startAfter(lastVisible),
+      limit(pageSize)
+    );
+  } else {
+    que = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      limit(pageSize)
+    );
   }
 
-  const tbody = document.getElementById("lista-profesores");
-  tbody.innerHTML = "<tr><td colspan='5'>Buscando...</td></tr>";
+  const snap = await getDocs(que);
 
-  const snap = await getDocs(collection(db, "usuarios"));
-  tbody.innerHTML = "";
+  if (snap.empty) return;
 
-  snap.forEach((docSnap) => {
-    const p = docSnap.data();
+  tableBody.innerHTML = "";
 
-    if (p.rol !== "Profesor") return;
+  snap.forEach(docu => {
+    const data = docu.data();
 
-    const match =
-      (p.nombre || "").toLowerCase().includes(texto) ||
-      (p.correo || "").toLowerCase().includes(texto) ||
-      (p.nivel || "").toLowerCase().includes(texto) ||
-      (p.rol || "").toLowerCase().includes(texto);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${data.nombre}</td>
+      <td>${data.correo}</td>
+      <td>${data.rol}</td>
+      <td>${data.grado}</td>
+      <td>${data.nivel}</td>
+      <td>
+        <button class="btn-edit" onclick="editarUsuario('${docu.id}', '${data.nombre}', '${data.correo}', '${data.rol}', '${data.grado}', '${data.nivel}')">Editar</button>
 
-    if (match) pintarProfesor(docSnap);
+        <button class="btn-delete" onclick="eliminarUsuario('${docu.id}')">Eliminar</button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
   });
+
+  // Guardamos el nuevo puntero
+  historyStack.push(snap.docs[0]);
+  lastVisible = snap.docs[snap.docs.length - 1];
 }
 
+// =================================================================
+// 🔹 PAGINACIÓN
+// =================================================================
+window.addEventListener("click", async (e) => {
+  if (e.target.id === "btnSiguiente") cargarUsuarios();
+  
+  if (e.target.id === "btnAnterior") {
+    if (historyStack.length <= 1) return;
 
-// ======================================================
-// 🔹 Modal editar
-// ======================================================
-window.editarProfesor = (id, nombre, correo, grado, nivel) => {
-  document.getElementById("modal-titulo").textContent = "Editar Profesor";
+    historyStack.pop();
+    const prevStart = historyStack[historyStack.length - 1];
+
+    const que = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      startAfter(prevStart),
+      limit(pageSize)
+    );
+
+    const snap = await getDocs(que);
+
+    tableBody.innerHTML = "";
+    snap.forEach(docu => {
+      const data = docu.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${data.nombre}</td>
+        <td>${data.correo}</td>
+        <td>${data.rol}</td>
+        <td>${data.grado}</td>
+        <td>${data.nivel}</td>
+        <td>
+          <button class="btn-edit" onclick="editarUsuario('${docu.id}', '${data.nombre}', '${data.correo}', '${data.rol}', '${data.grado}', '${data.nivel}')">Editar</button>
+          <button class="btn-delete" onclick="eliminarUsuario('${docu.id}')">Eliminar</button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    lastVisible = snap.docs[snap.docs.length - 1];
+  }
+});
+
+// =================================================================
+// 🔹 ELIMINAR USUARIO
+// =================================================================
+window.eliminarUsuario = async (id) => {
+  const confirmacion = await Swal.fire({
+    title: "¿Eliminar usuario?",
+    text: "Esta acción no se puede deshacer",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  });
+
+  if (!confirmacion.isConfirmed) return;
+
+  await deleteDoc(doc(db, "usuarios", id));
+
+  Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
+
+  cargarUsuarios(true);
+};
+
+// =================================================================
+// 🔹 EDITAR USUARIO
+// =================================================================
+let idEditando = null;
+
+window.editarUsuario = (id, nombre, correo, rol, grado, nivel) => {
+  idEditando = id;
+
+  document.getElementById("modal-titulo").textContent = "Editar Usuario";
+
   document.getElementById("nombre-input").value = nombre;
   document.getElementById("correo-input").value = correo;
+  document.getElementById("rol-input").value = rol;
   document.getElementById("grado-input").value = grado;
   document.getElementById("nivel-input").value = nivel;
-  modal.style.display = "flex";
-  modal.dataset.id = id;
+
+  document.getElementById("modal-profesor").style.display = "flex";
 };
 
-window.cerrarModal = () => { modal.style.display = "none"; };
-
+// Guardar cambios
 window.guardarProfesor = async () => {
-  const id = modal.dataset.id;
+  if (!idEditando) return;
 
-  await updateDoc(doc(db, "usuarios", id), {
-    nombre: document.getElementById("nombre-input").value,
-    correo: document.getElementById("correo-input").value,
-    grado: document.getElementById("grado-input").value,
-    nivel: document.getElementById("nivel-input").value
+  const nombre = document.getElementById("nombre-input").value;
+  const correo = document.getElementById("correo-input").value;
+  const rol = document.getElementById("rol-input").value;
+  const grado = document.getElementById("grado-input").value;
+  const nivel = document.getElementById("nivel-input").value;
+
+  await updateDoc(doc(db, "usuarios", idEditando), {
+    nombre, correo, rol, grado, nivel
   });
 
+  Swal.fire("Actualizado", "Datos guardados correctamente", "success");
+
   cerrarModal();
-  cargarProfesoresRecientes();
+  cargarUsuarios(true);
 };
 
-window.eliminarProfesor = async (id) => {
-  if (confirm("¿Desea eliminar este profesor?")) {
-    await deleteDoc(doc(db, "usuarios", id));
-    cargarProfesoresRecientes();
-  }
+// cerrar modal
+window.cerrarModal = () => {
+  document.getElementById("modal-profesor").style.display = "none";
 };
 
+// =================================================================
+// 🔹 INICIO
+// =================================================================
+window.addEventListener("DOMContentLoaded", () => {
+  // Renderizamos tabla
+  renderTabla();
 
-// ======================================================
-// 🔹 PROFESOR (Comunicados 5 recientes + paginación)
-// ======================================================
-let ultimoComunicado = null;
+  // Reasignamos elementos
+  tableBody = document.getElementById("tabla-usuarios");
+  btnAnterior = document.getElementById("btnAnterior");
+  btnSiguiente = document.getElementById("btnSiguiente");
 
-async function renderProfesor(usuario) {
-  contenido.innerHTML = `
-    <div class="info">
-      <p>Nombre: <span>${usuario.nombre}</span></p>
-      <p>Rol: <span>${usuario.rol}</span></p>
-      <p>Grado/Salón/Materia: <span>${usuario.grado || "-"}</span></p>
-      <p>Correo: <span>${usuario.correo}</span></p>
-    </div>
+  tituloPantalla.textContent = "Gestión de Usuarios";
 
-    <h2>Comunicados Recientes</h2>
-    <table>
-      <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
-      <tbody id="lista-comunicados"></tbody>
-    </table>
-
-    <button id="btnMasComunicados" style="margin-top:10px; padding:8px;">Ver más comunicados</button>
-  `;
-
-  await cargarComunicadosRecientes();
-
-  document.getElementById("btnMasComunicados")
-    .addEventListener("click", cargarMasComunicados);
-}
-
-
-// ======================================================
-// 🔹 Comunicados → cargar 5 recientes
-// ======================================================
-async function cargarComunicadosRecientes() {
-  const tbody = document.getElementById("lista-comunicados");
-  tbody.innerHTML = "<tr><td colspan='3'>Cargando...</td></tr>";
-
-  const q = query(
-    collection(db, "comunicados"),
-    orderBy("fecha", "desc"),
-    limit(5)
-  );
-
-  const snap = await getDocs(q);
-  ultimoComunicado = snap.docs[snap.docs.length - 1];
-
-  tbody.innerHTML = "";
-  snap.forEach((d) => pintarComunicado(d));
-}
-
-
-// ======================================================
-// 🔹 Comunicados → Paginar otros 5
-// ======================================================
-async function cargarMasComunicados() {
-  if (!ultimoComunicado) return;
-
-  const q = query(
-    collection(db, "comunicados"),
-    orderBy("fecha", "desc"),
-    startAfter(ultimoComunicado),
-    limit(5)
-  );
-
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    alert("No hay más comunicados");
-    return;
-  }
-
-  ultimoComunicado = snap.docs[snap.docs.length - 1];
-
-  snap.forEach((d) => pintarComunicado(d));
-}
-
-
-// ======================================================
-// 🔹 Pintar comunicado
-// ======================================================
-function pintarComunicado(docSnap) {
-  const tbody = document.getElementById("lista-comunicados");
-  const c = docSnap.data();
-
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td>${c.titulo}</td>
-    <td>${c.descripcion || "Sin descripción"}</td>
-    <td>${c.fecha}</td>
-  `;
-  tbody.appendChild(tr);
-}
+  cargarUsuarios(true);
+});
