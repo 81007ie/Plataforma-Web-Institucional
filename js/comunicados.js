@@ -1,5 +1,5 @@
 // ===============================
-// 📢 MÓDULO DE COMUNICADOS
+// 📢 MÓDULO DE COMUNICADOS (ACTUALIZADO FINAL)
 // ===============================
 
 import { auth, db } from "./firebaseconfig.js";
@@ -21,29 +21,28 @@ const form = document.getElementById("form-comunicado");
 const listaComunicados = document.getElementById("lista-comunicados");
 const formularioSection = document.getElementById("formulario-section");
 
-// Modal del HTML
+// Modal
 const modalEditar = document.getElementById("modalEditar");
 const nuevoTexto = document.getElementById("nuevoTexto");
 const btnGuardarCambios = document.getElementById("guardarCambios");
 const btnCancelarEdicion = document.getElementById("cancelarEdicion");
 
 let idComunicadoEditando = null;
+let rolUsuario = null;
 
 // =====================================
 // 🔹 CACHE LOCAL
 // =====================================
 let cacheComunicados = [];
-let ultimoCache = 0;
 
 if (localStorage.getItem("comunicados_cache")) {
   const data = JSON.parse(localStorage.getItem("comunicados_cache"));
   cacheComunicados = data.comunicados || [];
-  ultimoCache = data.timestamp || 0;
   renderizarComunicados(cacheComunicados);
 }
 
 // =====================================
-// 🔹 DETECTAR USUARIO Y ROL (CORREGIDO)
+// 🔹 DETECTAR USUARIO Y ROL
 // =====================================
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
@@ -51,25 +50,25 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
 
-  // 🔥 Obtener rol desde Firestore (NO del localStorage)
+  // Obtener rol desde Firestore
   const snap = await getDoc(doc(db, "usuarios", user.uid));
 
   if (snap.exists()) {
-    const datosUsuario = snap.data();
-    controlarAccesos(datosUsuario.rol);
-  } else {
-    console.warn("⚠ No se encontró el documento del usuario en Firestore");
+    rolUsuario = snap.data().rol;
+    controlarAccesos(rolUsuario);
   }
 
   iniciarLecturaComunicados();
 });
 
 // =====================================
-// 🔹 ACCESO POR ROL
+// 🔹 CONTROL DE ACCESO
 // =====================================
 function controlarAccesos(rol) {
   if (rol === "Administrativo" || rol === "Subdirector") {
     formularioSection.classList.remove("oculto");
+  } else {
+    formularioSection.classList.add("oculto");
   }
 }
 
@@ -85,6 +84,7 @@ function iniciarLecturaComunicados() {
       ...d.data()
     }));
 
+    // Ordenar por fecha
     nuevos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
     cacheComunicados = nuevos;
@@ -116,17 +116,27 @@ function renderizarComunicados(lista) {
       <div class="contenido">
         <h3>${item.titulo}</h3>
         <p>${item.descripcion}</p>
-        <span class="fecha">📅 ${item.fecha}</span>
+        <span class="fecha">📅 ${item.fecha}</span><br>
+        <span class="creado">👤 Creado por: ${item.creadoPor || "Desconocido"}</span>
       </div>
+
       <div class="acciones">
-        <button class="edit-btn">✏️</button>
-        <button class="delete-btn">🗑️</button>
+        ${
+          rolUsuario === "Administrativo" || rolUsuario === "Subdirector"
+            ? `
+           <button class="edit-btn">✏️</button>
+           <button class="delete-btn">🗑️</button>
+        `
+            : ""
+        }
       </div>
     `;
 
-    div.querySelector(".edit-btn").onclick = () => abrirModalEdicion(item);
-    div.querySelector(".delete-btn").onclick = () =>
-      eliminarComunicado(item.id);
+    // Solo permitir editar/eliminar a roles autorizados
+    if (rolUsuario === "Administrativo" || rolUsuario === "Subdirector") {
+      div.querySelector(".edit-btn").onclick = () => abrirModalEdicion(item);
+      div.querySelector(".delete-btn").onclick = () => eliminarComunicado(item.id);
+    }
 
     listaComunicados.appendChild(div);
   });
@@ -137,6 +147,11 @@ function renderizarComunicados(lista) {
 // =====================================
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  // Solo permitir agregar si el rol es válido
+  if (rolUsuario !== "Administrativo" && rolUsuario !== "Subdirector") {
+    return alert("No tienes permiso para agregar comunicados.");
+  }
 
   const titulo = form.titulo.value.trim();
   const descripcion = form.descripcion.value.trim();
@@ -167,19 +182,21 @@ async function eliminarComunicado(id) {
 }
 
 // =====================================
-// 🔹 ABRIR MODAL DE EDICIÓN
+// 🔹 ABRIR MODAL PARA EDITAR
 // =====================================
 function abrirModalEdicion(comunicado) {
   idComunicadoEditando = comunicado.id;
 
   nuevoTexto.value =
-    `Título: ${comunicado.titulo}\n\nDescripción:\n${comunicado.descripcion}\n\nFecha: ${comunicado.fecha}`;
+    `Título: ${comunicado.titulo}\n\n` +
+    `Descripción:\n${comunicado.descripcion}\n\n` +
+    `Fecha: ${comunicado.fecha}`;
 
-  modalEditar.style.display = "flex";
+  modalEditar.classList.add("mostrar");
 }
 
 // =====================================
-// 🔹 GUARDAR CAMBIOS
+// 🔹 GUARDAR EDICIÓN
 // =====================================
 btnGuardarCambios.onclick = async () => {
   if (!idComunicadoEditando) return;
@@ -199,12 +216,12 @@ btnGuardarCambios.onclick = async () => {
     fecha
   });
 
-  modalEditar.style.display = "none";
+  modalEditar.classList.remove("mostrar");
 };
 
 // =====================================
-// 🔹 CANCELAR
+// 🔹 CANCELAR EDICIÓN
 // =====================================
 btnCancelarEdicion.onclick = () => {
-  modalEditar.style.display = "none";
+  modalEditar.classList.remove("mostrar");
 };

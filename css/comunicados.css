@@ -128,62 +128,76 @@ section#lista-section h2 { margin-bottom: 10px; color: var(--azul-oscuro); }
 #lista-comunicados::-webkit-scrollbar { width: 6px; }
 #lista-comunicados::-webkit-scrollbar-thumb { background-color: var(--celeste); border-radius: 3px; }
 
-/* === Modal de edición elegante === */
-.modal-editar {
+/* ========= MODAL COMPATIBLE CON HTML Y JS ========= */
+
+.modal {
   position: fixed;
-  inset: 0;
-  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
 }
-.modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+
+.modal.mostrar {
+  display: flex !important;
 }
-.modal-contenido {
-  position: relative;
-  max-width: 400px;
-  background: #fff;
-  margin: 10% auto;
+
+.modal-content {
+  background: white;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  animation: aparecer 0.3s ease;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
-.modal-contenido h2 {
+
+.modal-content h3 {
   margin-bottom: 10px;
+  color: var(--azul-oscuro);
 }
-.modal-contenido label {
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
-}
-.modal-contenido input, 
-.modal-contenido textarea {
+
+.modal-content textarea {
   width: 100%;
-  margin-top: 5px;
-  padding: 8px;
+  padding: 10px;
+  resize: vertical;
   border-radius: 6px;
   border: 1px solid #ccc;
 }
-.modal-botones {
+
+.modal-actions {
   margin-top: 15px;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
-.modal-botones button {
-  margin-left: 10px;
-  padding: 8px 15px;
+
+.modal-actions button {
+  padding: 8px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
+  font-weight: bold;
 }
-.modal-botones #guardar-cambios {
-  background: #1e88e5;
+
+#guardarCambios {
+  background-color: var(--celeste);
   color: white;
 }
-.modal-botones #cancelar {
-  background: #ccc;
+
+#guardarCambios:hover {
+  background-color: var(--azul-borde);
 }
-@keyframes aparecer {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+
+#cancelarEdicion {
+  background-color: #ccc;
+  color: #333;
+}
+
+#cancelarEdicion:hover {
+  background-color: #b4b4b4;
 }
