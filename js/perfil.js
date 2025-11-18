@@ -106,6 +106,7 @@ function prepararBotones() {
 async function cargarVista() {
   const permisos = PERMISOS[usuarioActual.rol];
 
+  // PERFIL
   main.innerHTML = `
     <h1>Perfil</h1>
     <div class="perfil-box">
@@ -116,11 +117,12 @@ async function cargarVista() {
   `;
 
   if (permisos.verUsuarios) await cargarUsuarios(permisos);
+
   await cargarComunicados(permisos.verComunicados);
 }
 
 // =========================
-// USUARIOS
+// CARGAR USUARIOS
 // =========================
 async function cargarUsuarios(permisos) {
   main.innerHTML += `
@@ -145,6 +147,7 @@ async function cargarUsuarios(permisos) {
     </table>
   `;
 
+  // Carga inicial desde Firestore (o IndexedDB si ya está cacheado)
   if (!cacheUsuarios.length) {
     const snap = await getDocs(collection(db, "usuarios"));
     cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -152,19 +155,29 @@ async function cargarUsuarios(permisos) {
 
   renderUsuarios(cacheUsuarios, permisos);
 
+  // =========================
+  // Buscador – ahora estable (no se rompe)
+  // =========================
   if (permisos.verBuscador) {
-    document.getElementById("buscador").oninput = (e) => {
+    const input = document.getElementById("buscador");
+    input.addEventListener("input", (e) => {
       const txt = e.target.value.toLowerCase();
+
       const filtrados = cacheUsuarios.filter(u =>
         u.nombre.toLowerCase().includes(txt) ||
         u.correo.toLowerCase().includes(txt) ||
-        (u.nivel || "").toLowerCase().includes(txt)
+        (u.nivel || "").toLowerCase().includes(txt) ||
+        (u.rol || "").toLowerCase().includes(txt)
       );
+
       renderUsuarios(filtrados, permisos);
-    };
+    });
   }
 }
 
+// =========================
+// RENDER USUARIOS
+// =========================
 function renderUsuarios(lista, permisos) {
   const tbody = document.getElementById("tablaUsuarios");
   tbody.innerHTML = "";
@@ -190,10 +203,12 @@ function renderUsuarios(lista, permisos) {
   });
 
   if (permisos.crud) {
+    // Botón editar
     document.querySelectorAll(".btn-edit").forEach(btn => {
       btn.onclick = () => abrirModal(btn.dataset.id);
     });
 
+    // Botón eliminar
     document.querySelectorAll(".btn-delete").forEach(btn => {
       btn.onclick = () => eliminarUsuario(btn.dataset.id);
     });
@@ -201,7 +216,7 @@ function renderUsuarios(lista, permisos) {
 }
 
 // =========================
-// MODAL
+// MODAL USUARIO
 // =========================
 function abrirModal(id) {
   usuarioEnEdicion = cacheUsuarios.find(u => u.id === id);
@@ -228,6 +243,7 @@ async function guardarUsuario() {
     grado: gradoInput.value
   });
 
+  // Actualizar cache local
   Object.assign(usuarioEnEdicion, {
     nombre: nombreInput.value,
     correo: correoInput.value,
@@ -242,7 +258,7 @@ async function guardarUsuario() {
 }
 
 // =========================
-// ELIMINAR
+// ELIMINAR USUARIO
 // =========================
 async function eliminarUsuario(id) {
   if (!confirm("¿Eliminar usuario?")) return;
@@ -277,10 +293,12 @@ async function cargarComunicados(tipo) {
     const snap = await getDocs(
       query(collection(db, "comunicados"), orderBy("fecha", "desc"))
     );
+
     cacheComunicados = snap.docs.map(d => d.data());
   }
 
-  let lista = tipo === "limitados" ? cacheComunicados.slice(0, 5) : cacheComunicados;
+  let lista =
+    tipo === "limitados" ? cacheComunicados.slice(0, 5) : cacheComunicados;
 
   const tbody = document.getElementById("tablaComunicados");
   tbody.innerHTML = "";
