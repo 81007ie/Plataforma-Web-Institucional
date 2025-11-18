@@ -20,13 +20,16 @@
     <button id="btnCerrar">Cerrar sesión</button>
   </nav>
 
-  <!-- 🔹 CONTENEDOR PRINCIPAL (OBLIGATORIO) -->
-  <main id="main-content"></main>
+  <!-- 🔹 Título dinámico -->
+  <h1 id="titulo-pantalla" style="text-align:center; margin-top:20px;"></h1>
 
-  <!-- 🔹 Modal editar usuario -->
-  <div id="modal-usuario" class="modal">
+  <!-- 🔹 CONTENEDOR PRINCIPAL QUE USA TU JS -->
+  <main id="contenido"></main>
+
+  <!-- 🔹 Modal editar profesor (coincide con tu JS) -->
+  <div id="modal-profesor" class="modal">
     <div class="modal-content">
-      <h2>Editar Usuario</h2>
+      <h2 id="modal-titulo">Editar Profesor</h2>
 
       <label>Nombre:
         <input type="text" id="nombre-input" autocomplete="off">
@@ -36,17 +39,17 @@
         <input type="email" id="correo-input" autocomplete="off">
       </label>
 
-      <label>Nivel:
-        <input type="text" id="nivel-input" autocomplete="off">
-      </label>
-
       <label>Grado/Salón:
         <input type="text" id="grado-input" autocomplete="off">
       </label>
 
+      <label>Nivel:
+        <input type="text" id="nivel-input" autocomplete="off">
+      </label>
+
       <div class="modal-actions">
-        <button id="btnGuardar">Guardar</button>
-        <button id="btnCancelar">Cancelar</button>
+        <button onclick="guardarProfesor()">Guardar</button>
+        <button onclick="cerrarModal()">Cancelar</button>
       </div>
     </div>
   </div>

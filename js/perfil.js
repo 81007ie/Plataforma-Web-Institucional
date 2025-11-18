@@ -1,7 +1,5 @@
-// ===============================
-// perfil.js FINAL (VERSIÓN ESTABLE)
-// ===============================
 import { auth, db } from "./firebaseconfig.js";
+
 import {
   onAuthStateChanged,
   signOut
@@ -15,355 +13,328 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy
+  orderBy,
+  limit,
+  startAfter
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// ==================================================
-// DOM
-// ==================================================
-const main = document.getElementById("main-content");
-const modal = document.getElementById("modal-usuario");
 
-const nombreInput = document.getElementById("nombre-input");
-const correoInput = document.getElementById("correo-input");
-const nivelInput = document.getElementById("nivel-input");
-const gradoInput = document.getElementById("grado-input");
+// ======================================================
+// 🔹 Elementos del DOM
+// ======================================================
+const contenido = document.getElementById("contenido");
+const tituloPantalla = document.getElementById("titulo-pantalla");
+const modal = document.getElementById("modal-profesor");
 
-const btnGuardar = document.getElementById("btnGuardar");
-const btnCancelar = document.getElementById("btnCancelar");
 
-// ==================================================
-// Variables
-// ==================================================
-let cacheUsuarios = [];
-let cacheComunicados = [];
-
-let usuarioActual = null;
-let usuarioEnEdicion = null;
-
-const LS_KEY_USUARIOS = "cacheUsuarios_perfil_v1";
-
-// ==================================================
-// PERMISOS
-// ==================================================
-const PERMISOS = {
-  Administrativo: { verUsuarios: true, crud: true, verBuscador: true, verComunicados: "limitados" },
-  Subdirector:    { verUsuarios: true, crud: false, verBuscador: true, verComunicados: "limitados" },
-  Profesor:       { verUsuarios: false, crud: false, verBuscador: false, verComunicados: "limitados" },
-  Auxiliar:       { verUsuarios: false, crud: false, verBuscador: false, verComunicados: "limitados" },
-  Toe:            { verUsuarios: false, crud: false, verBuscador: false, verComunicados: "limitados" }
-};
-
-// ==================================================
-// SMALL UTILITIES
-// ==================================================
-function debounce(fn, wait = 200) {
-  let t;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), wait);
-  };
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-// ==================================================
-// CACHÉ LOCAL
-// ==================================================
-function guardarCacheUsuarios() {
-  localStorage.setItem(LS_KEY_USUARIOS, JSON.stringify(cacheUsuarios));
-}
-
-function cargarCacheUsuarios() {
-  const raw = localStorage.getItem(LS_KEY_USUARIOS);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) || [];
-  } catch {
-    return null;
-  }
-}
-
-// ==================================================
-// AUTH
-// ==================================================
+// ======================================================
+// 🔹 Verificar sesión actual
+// ======================================================
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return (window.location.href = "login.html");
-
-  const snap = await getDoc(doc(db, "usuarios", user.uid));
-  if (!snap.exists()) {
-    alert("No se encontró tu perfil.");
+  if (!user) {
+    alert("Estás saliendo de tu cuenta...");
+    window.location.href = "login.html";
     return;
   }
 
-  usuarioActual = snap.data();
-  prepararEventos();
-  cargarVista();
+  const userRef = doc(db, "usuarios", user.uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) {
+    alert("No se encontraron tus datos en la base de datos");
+    return;
+  }
+
+  const usuario = userSnap.data();
+  tituloPantalla.textContent = `Perfil ${usuario.rol}`;
+
+  // Botón cerrar sesión
+  document.getElementById("btnCerrar").addEventListener("click", async () => {
+    await signOut(auth);
+    localStorage.clear();
+    window.location.href = "login.html";
+  });
+
+  // Render según rol
+  if (usuario.rol === "Administrativo") renderAdmin(usuario);
+  else if (usuario.rol === "Profesor") renderProfesor(usuario);
+  else contenido.innerHTML = "<p>Rol no reconocido.</p>";
 });
 
-// ==================================================
-// EVENTOS GLOBALES
-// ==================================================
-function prepararEventos() {
-  const btnCerrar = document.getElementById("btnCerrar");
-  if (btnCerrar) {
-    btnCerrar.onclick = async () => {
-      await signOut(auth);
-      localStorage.clear();
-      window.location.href = "login.html";
-    };
-  }
 
-  btnCancelar.onclick = cerrarModal;
-  btnGuardar.onclick = guardarUsuario;
-}
+// ======================================================
+// 🔹 ADMINISTRATIVO (solo 5 usuarios + paginación + búsqueda)
+// ======================================================
+let ultimaPaginaUsuarios = null; // para paginar
 
-// ==================================================
-// CARGAR VISTA PRINCIPAL
-// ==================================================
-async function cargarVista() {
-  main.innerHTML = `
-    <h1>Perfil</h1>
-
-    <div class="perfil-box">
-      <p><strong>Nombre:</strong> ${escapeHtml(usuarioActual.nombre)}</p>
-      <p><strong>Correo:</strong> ${escapeHtml(usuarioActual.correo)}</p>
-      <p><strong>Rol:</strong> ${escapeHtml(usuarioActual.rol)}</p>
+async function renderAdmin(usuario) {
+  contenido.innerHTML = `
+    <div class="info">
+      <p>Nombre: <span>${usuario.nombre}</span></p>
+      <p>Rol: <span>${usuario.rol}</span></p>
     </div>
-  `;
 
-  const permisos = PERMISOS[usuarioActual.rol];
+    <h2>Lista de Profesores</h2>
 
-  if (permisos.verUsuarios) {
-    await cargarUsuarios(permisos);
-  }
+    <input type="text" id="buscador" placeholder="Buscar por nombre, correo, rol o nivel..."
+      style="width: 60%; padding: 8px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc;">
 
-  await cargarComunicados(permisos.verComunicados);
-}
-
-// ==================================================
-// CARGAR USUARIOS
-// ==================================================
-async function cargarUsuarios(permisos) {
-  main.innerHTML += `
-    <h2>Lista de Usuarios</h2>
-
-    ${permisos.verBuscador ? `<input id="buscador" class="input-buscar" type="text" placeholder="Buscar usuarios...">` : ""}
-
-    <table class="tabla">
+    <table>
       <thead>
         <tr>
           <th>Nombre</th>
           <th>Correo</th>
-          <th>Rol</th>
+          <th>Grado/Salón/Materia</th>
           <th>Nivel</th>
-          <th>Grado</th>
-          ${permisos.crud ? "<th>Acciones</th>" : ""}
+          <th>Acciones</th>
         </tr>
       </thead>
-      <tbody id="tablaUsuarios"></tbody>
+      <tbody id="lista-profesores"></tbody>
     </table>
+
+    <button id="btnVerMas" style="margin-top:10px; padding:8px;">Ver más</button>
   `;
 
-  // 1. cargar cache del localStorage
-  const local = cargarCacheUsuarios();
-  if (local?.length) {
-    cacheUsuarios = local;
-    renderUsuarios(cacheUsuarios, permisos);
-  }
+  document.getElementById("buscador").addEventListener("input", filtrarProfesores);
 
-  // 2. obtener Firestore (sea primera carga o refresco)
-  const snap = await getDocs(collection(db, "usuarios"));
-  cacheUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  guardarCacheUsuarios();
-  renderUsuarios(cacheUsuarios, permisos);
+  await cargarProfesoresRecientes();
 
-  // 3. activamos el buscador
-  if (permisos.verBuscador) activarBuscador(permisos);
+  document.getElementById("btnVerMas").addEventListener("click", cargarMasProfesores);
 }
 
-// ==================================================
-// BUSCADOR
-// ==================================================
-function activarBuscador(permisos) {
-  const input = document.getElementById("buscador");
-  if (!input) return;
 
-  const filtrar = debounce((txt) => {
-    txt = txt.toLowerCase().trim();
+// ======================================================
+// 🔹 1. Cargar solo 5 recientes
+// ======================================================
+async function cargarProfesoresRecientes() {
+  const tbody = document.getElementById("lista-profesores");
+  tbody.innerHTML = "<tr><td colspan='5'>Cargando...</td></tr>";
 
-    if (!txt)
-      return renderUsuarios(cacheUsuarios, permisos);
+  const q = query(
+    collection(db, "usuarios"),
+    orderBy("fechaRegistro", "desc"),
+    limit(5)
+  );
 
-    const resultado = cacheUsuarios.filter(u =>
-      (u.nombre || "").toLowerCase().includes(txt) ||
-      (u.correo || "").toLowerCase().includes(txt) ||
-      (u.rol || "").toLowerCase().includes(txt) ||
-      (u.nivel || "").toLowerCase().includes(txt)
-    );
+  const snap = await getDocs(q);
 
-    renderUsuarios(resultado, permisos);
-  }, 200);
+  ultimaPaginaUsuarios = snap.docs[snap.docs.length - 1];
 
-  input.addEventListener("input", (e) => filtrar(e.target.value));
-}
-
-// ==================================================
-// RENDER USUARIOS
-// ==================================================
-function renderUsuarios(lista, permisos) {
-  const tbody = document.getElementById("tablaUsuarios");
   tbody.innerHTML = "";
+  snap.forEach((docSnap) => pintarProfesor(docSnap));
+}
 
-  if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="${permisos.crud ? 6 : 5}" style="text-align:center">No hay usuarios</td></tr>`;
+
+// ======================================================
+// 🔹 2. Cargar paginación (siguiente 5)
+// ======================================================
+async function cargarMasProfesores() {
+  if (!ultimaPaginaUsuarios) return;
+
+  const q = query(
+    collection(db, "usuarios"),
+    orderBy("fechaRegistro", "desc"),
+    startAfter(ultimaPaginaUsuarios),
+    limit(5)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    alert("No hay más profesores");
     return;
   }
 
-  lista.forEach(u => {
-    const tr = document.createElement("tr");
+  ultimaPaginaUsuarios = snap.docs[snap.docs.length - 1];
 
-    tr.innerHTML = `
-      <td>${escapeHtml(u.nombre)}</td>
-      <td>${escapeHtml(u.correo)}</td>
-      <td>${escapeHtml(u.rol)}</td>
-      <td>${escapeHtml(u.nivel || "-")}</td>
-      <td>${escapeHtml(u.grado || "-")}</td>
-      ${permisos.crud ? `
-        <td>
-          <button class="btn-edit" data-id="${u.id}">Editar</button>
-          <button class="btn-delete" data-id="${u.id}">Eliminar</button>
-        </td>
-      ` : ""}
-    `;
-
-    tbody.appendChild(tr);
-  });
-
-  if (permisos.crud) bindCrudBotones(permisos);
+  snap.forEach((docSnap) => pintarProfesor(docSnap));
 }
 
-// ==================================================
-// EVENTOS CRUD
-// ==================================================
-function bindCrudBotones(permisos) {
-  document.querySelectorAll(".btn-edit").forEach(btn => {
-    btn.onclick = () => abrirModal(btn.dataset.id);
-  });
 
-  document.querySelectorAll(".btn-delete").forEach(btn => {
-    btn.onclick = () => eliminarUsuario(btn.dataset.id, permisos);
-  });
-}
+// ======================================================
+// 🔹 Pintar profesor en tabla
+// ======================================================
+function pintarProfesor(docSnap) {
+  const p = docSnap.data();
+  if (p.rol !== "Profesor") return;
 
-// ==================================================
-// MODAL EDITAR
-// ==================================================
-function abrirModal(id) {
-  usuarioEnEdicion = cacheUsuarios.find(u => u.id === id);
-  if (!usuarioEnEdicion) return alert("Usuario no encontrado");
+  const tbody = document.getElementById("lista-profesores");
 
-  nombreInput.value = usuarioEnEdicion.nombre || "";
-  correoInput.value = usuarioEnEdicion.correo || "";
-  nivelInput.value = usuarioEnEdicion.nivel || "";
-  gradoInput.value = usuarioEnEdicion.grado || "";
-
-  modal.style.display = "flex";
-}
-
-function cerrarModal() {
-  modal.style.display = "none";
-}
-
-// ==================================================
-// GUARDAR EDITAR
-// ==================================================
-async function guardarUsuario() {
-  const ref = doc(db, "usuarios", usuarioEnEdicion.id);
-
-  await updateDoc(ref, {
-    nombre: nombreInput.value,
-    correo: correoInput.value,
-    nivel: nivelInput.value,
-    grado: gradoInput.value
-  });
-
-  // actualizar cache local
-  Object.assign(usuarioEnEdicion, {
-    nombre: nombreInput.value,
-    correo: correoInput.value,
-    nivel: nivelInput.value,
-    grado: gradoInput.value
-  });
-
-  guardarCacheUsuarios();
-
-  const permisos = PERMISOS[usuarioActual.rol];
-  renderUsuarios(cacheUsuarios, permisos);
-
-  cerrarModal();
-}
-
-// ==================================================
-// ELIMINAR USUARIO
-// ==================================================
-async function eliminarUsuario(id, permisos) {
-  if (!confirm("¿Eliminar usuario?")) return;
-
-  await deleteDoc(doc(db, "usuarios", id));
-
-  cacheUsuarios = cacheUsuarios.filter(u => u.id !== id);
-  guardarCacheUsuarios();
-
-  renderUsuarios(cacheUsuarios, permisos);
-}
-
-// ==================================================
-// COMUNICADOS
-// ==================================================
-async function cargarComunicados(tipo) {
-  main.innerHTML += `
-    <h2>Comunicados</h2>
-    <table class="tabla">
-      <thead>
-        <tr>
-          <th>Título</th>
-          <th>Descripción</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody id="tablaComunicados"></tbody>
-    </table>
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${p.nombre}</td>
+    <td>${p.correo}</td>
+    <td>${p.grado || "-"}</td>
+    <td>${p.nivel || "-"}</td>
+    <td>
+      <button onclick="editarProfesor('${docSnap.id}', '${p.nombre}', '${p.correo}', '${p.grado}', '${p.nivel}')">Editar</button>
+      <button onclick="eliminarProfesor('${docSnap.id}')">Eliminar</button>
+    </td>
   `;
 
-  if (!cacheComunicados.length) {
-    const snap = await getDocs(query(collection(db, "comunicados"), orderBy("fecha", "desc")));
-    cacheComunicados = snap.docs.map(d => d.data());
+  tbody.appendChild(tr);
+}
+
+
+// ======================================================
+// 🔹 Búsqueda dinámica en Firestore
+// ======================================================
+async function filtrarProfesores(e) {
+  const texto = e.target.value.toLowerCase().trim();
+
+  if (texto === "") {
+    cargarProfesoresRecientes();
+    return;
   }
 
-  const lista = tipo === "limitados" ? cacheComunicados.slice(0, 5) : cacheComunicados;
+  const tbody = document.getElementById("lista-profesores");
+  tbody.innerHTML = "<tr><td colspan='5'>Buscando...</td></tr>";
 
-  const tbody = document.getElementById("tablaComunicados");
+  const snap = await getDocs(collection(db, "usuarios"));
   tbody.innerHTML = "";
 
-  lista.forEach(c => {
-    const tr = document.createElement("tr");
+  snap.forEach((docSnap) => {
+    const p = docSnap.data();
 
-    tr.innerHTML = `
-      <td>${escapeHtml(c.titulo)}</td>
-      <td>${escapeHtml(c.descripcion)}</td>
-      <td>${escapeHtml(c.fecha)}</td>
-    `;
+    if (p.rol !== "Profesor") return;
 
-    tbody.appendChild(tr);
+    const match =
+      (p.nombre || "").toLowerCase().includes(texto) ||
+      (p.correo || "").toLowerCase().includes(texto) ||
+      (p.nivel || "").toLowerCase().includes(texto) ||
+      (p.rol || "").toLowerCase().includes(texto);
+
+    if (match) pintarProfesor(docSnap);
   });
 }
 
-// ===============================
-// FIN
-// ===============================
+
+// ======================================================
+// 🔹 Modal editar
+// ======================================================
+window.editarProfesor = (id, nombre, correo, grado, nivel) => {
+  document.getElementById("modal-titulo").textContent = "Editar Profesor";
+  document.getElementById("nombre-input").value = nombre;
+  document.getElementById("correo-input").value = correo;
+  document.getElementById("grado-input").value = grado;
+  document.getElementById("nivel-input").value = nivel;
+  modal.style.display = "flex";
+  modal.dataset.id = id;
+};
+
+window.cerrarModal = () => { modal.style.display = "none"; };
+
+window.guardarProfesor = async () => {
+  const id = modal.dataset.id;
+
+  await updateDoc(doc(db, "usuarios", id), {
+    nombre: document.getElementById("nombre-input").value,
+    correo: document.getElementById("correo-input").value,
+    grado: document.getElementById("grado-input").value,
+    nivel: document.getElementById("nivel-input").value
+  });
+
+  cerrarModal();
+  cargarProfesoresRecientes();
+};
+
+window.eliminarProfesor = async (id) => {
+  if (confirm("¿Desea eliminar este profesor?")) {
+    await deleteDoc(doc(db, "usuarios", id));
+    cargarProfesoresRecientes();
+  }
+};
+
+
+// ======================================================
+// 🔹 PROFESOR (Comunicados 5 recientes + paginación)
+// ======================================================
+let ultimoComunicado = null;
+
+async function renderProfesor(usuario) {
+  contenido.innerHTML = `
+    <div class="info">
+      <p>Nombre: <span>${usuario.nombre}</span></p>
+      <p>Rol: <span>${usuario.rol}</span></p>
+      <p>Grado/Salón/Materia: <span>${usuario.grado || "-"}</span></p>
+      <p>Correo: <span>${usuario.correo}</span></p>
+    </div>
+
+    <h2>Comunicados Recientes</h2>
+    <table>
+      <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
+      <tbody id="lista-comunicados"></tbody>
+    </table>
+
+    <button id="btnMasComunicados" style="margin-top:10px; padding:8px;">Ver más comunicados</button>
+  `;
+
+  await cargarComunicadosRecientes();
+
+  document.getElementById("btnMasComunicados")
+    .addEventListener("click", cargarMasComunicados);
+}
+
+
+// ======================================================
+// 🔹 Comunicados → cargar 5 recientes
+// ======================================================
+async function cargarComunicadosRecientes() {
+  const tbody = document.getElementById("lista-comunicados");
+  tbody.innerHTML = "<tr><td colspan='3'>Cargando...</td></tr>";
+
+  const q = query(
+    collection(db, "comunicados"),
+    orderBy("fecha", "desc"),
+    limit(5)
+  );
+
+  const snap = await getDocs(q);
+  ultimoComunicado = snap.docs[snap.docs.length - 1];
+
+  tbody.innerHTML = "";
+  snap.forEach((d) => pintarComunicado(d));
+}
+
+
+// ======================================================
+// 🔹 Comunicados → Paginar otros 5
+// ======================================================
+async function cargarMasComunicados() {
+  if (!ultimoComunicado) return;
+
+  const q = query(
+    collection(db, "comunicados"),
+    orderBy("fecha", "desc"),
+    startAfter(ultimoComunicado),
+    limit(5)
+  );
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    alert("No hay más comunicados");
+    return;
+  }
+
+  ultimoComunicado = snap.docs[snap.docs.length - 1];
+
+  snap.forEach((d) => pintarComunicado(d));
+}
+
+
+// ======================================================
+// 🔹 Pintar comunicado
+// ======================================================
+function pintarComunicado(docSnap) {
+  const tbody = document.getElementById("lista-comunicados");
+  const c = docSnap.data();
+
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${c.titulo}</td>
+    <td>${c.descripcion || "Sin descripción"}</td>
+    <td>${c.fecha}</td>
+  `;
+  tbody.appendChild(tr);
+}
