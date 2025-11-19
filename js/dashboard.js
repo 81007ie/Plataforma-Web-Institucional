@@ -1,90 +1,92 @@
 import { auth, db } from "./firebaseconfig.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { 
-  doc, getDoc, collection, getDocs, query, orderBy, limit,
-  enableIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-
-// ============================
-// 🔸 ELEMENTOS DEL DOM
-// ============================
+// 🔹 Elementos del DOM
 const nombreUsuario = document.getElementById("nombreUsuario");
 const btnLogout = document.getElementById("btnLogout");
 const listaComunicados = document.getElementById("lista-comunicados");
 
-// ============================
-// 🔸 AUTENTICACIÓN Y USUARIO
-// ============================
+// 🔹 Detectar autenticación
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "login.html";
     return;
   }
 
-  // 🔹 Intentar obtener usuario desde cache (sessionStorage)
-  let userData = sessionStorage.getItem("userData");
+  const userDoc = await getDoc(doc(db, "usuarios", user.uid));
 
-  if (userData) {
-    userData = JSON.parse(userData);
-  } else {
-    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-    if (userDoc.exists()) {
-      userData = userDoc.data();
-      sessionStorage.setItem("userData", JSON.stringify(userData));
-    } else {
-      alert("No se encontró tu información en la base de datos.");
-      return;
+  if (userDoc.exists()) {
+    const data = userDoc.data();
+    nombreUsuario.textContent = `👋 Bienvenida(o), ${data.nombre}`;
+
+    // Solo Administrativo y Subdirector ven opciones de admin
+    const rolesConPermisos = ["Administrativo", "Subdirector"];
+    if (!rolesConPermisos.includes(data.rol)) {
+      ocultarOpcionesAdmin(); // Oculta botones a Auxiliar, TOE y Profesor
     }
-  }
 
-  nombreUsuario.textContent = `👋 Bienvenida(o), ${userData.nombre}`;
-
-  // 🔹 Corregido: verificación de roles
-  if (["Profesor", "Auxiliar", "Toe"].includes(userData.rol)) {
-    ocultarOpcionesAdmin();
+  } else {
+    alert("No se encontró tu información en la base de datos.");
   }
 });
 
-// ============================
-// 🔸 CERRAR SESIÓN
-// ============================
+// 🔹 Cerrar sesión
 btnLogout.addEventListener("click", async () => {
   await signOut(auth);
-  sessionStorage.clear(); // limpia cache temporal
   window.location.href = "login.html";
 });
 
-// ============================
-// 🔸 OCULTAR OPCIONES ADMIN
-// ============================
+// 🔹 Función para ocultar elementos de admin
 function ocultarOpcionesAdmin() {
   const botonesAdmin = document.querySelectorAll(".btn-admin, .editar, .eliminar");
   botonesAdmin.forEach(btn => btn.style.display = "none");
 }
 
-// ============================
-// 🔸 CARGAR COMUNICADOS (con cache + persistencia)
-// ============================
+// 🔹 Función para cargar comunicados
 async function cargarComunicados() {
   try {
-    // 1️⃣ Buscar en cache temporal (sessionStorage)
-    let cache = sessionStorage.getItem("comunicados");
-    if (cache) {
-      renderizarComunicados(JSON.parse(cache));
+    const q = query(collection(db, "comunicados"), orderBy("fecha", "desc"));
+    const snapshot = await getDocs(q);
+
+    listaComunicados.innerHTML = "";
+
+    if (snapshot.empty) {
+      listaComunicados.innerHTML = "<li>No hay comunicados por el momento.</li>";
       return;
     }
 
-    // 2️⃣ Leer máximo 5 comunicados desde Firestore (usando cache offline si está disponible)
-    const q = query(collection(db, "comunicados"), orderBy("fecha", "desc"), limit(5));
-    const snapshot = await getDocs(q);
-    const comunicados = snapshot.docs.map(doc => doc.data());
+    snapshot.forEach(doc => {
+      const data = doc.data();
 
-    // 3️⃣ Guardar en cache temporal
-    sessionStorage.setItem("comunicados", JSON.stringify(comunicados));
+      // 🗓️ Ajuste correcto de fecha para zona horaria Lima
+      let fechaFormateada = "";
+      if (data.fecha) {
+        let fechaOriginal;
+        if (data.fecha.toDate) {
+          fechaOriginal = data.fecha.toDate(); // Timestamp Firestore
+        } else {
+          fechaOriginal = new Date(data.fecha + "T00:00:00"); // String tipo "YYYY-MM-DD"
+        }
 
-    // 4️⃣ Renderizar
-    renderizarComunicados(comunicados);
+        fechaFormateada = fechaOriginal.toLocaleDateString("es-PE", {
+          timeZone: "America/Lima",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        });
+      }
+
+      // 📰 Crear comunicado
+      const li = document.createElement("li");
+      li.classList.add("comunicado-item");
+      li.innerHTML = `
+        <strong>${data.titulo}</strong>
+        <em>${fechaFormateada}</em>
+        <p>${data.descripcion}</p>
+      `;
+      listaComunicados.appendChild(li);
+    });
 
   } catch (error) {
     console.error("Error al cargar comunicados:", error);
@@ -92,52 +94,7 @@ async function cargarComunicados() {
   }
 }
 
-// ============================
-// 🔸 FUNCIÓN PARA MOSTRAR COMUNICADOS
-// ============================
-function renderizarComunicados(comunicados) {
-  listaComunicados.innerHTML = "";
-
-  if (!comunicados || comunicados.length === 0) {
-    listaComunicados.innerHTML = "<li>No hay comunicados por el momento.</li>";
-    return;
-  }
-
-  comunicados.forEach(data => {
-    let fechaFormateada = "";
-    if (data.fecha) {
-      let fechaOriginal;
-
-      if (data.fecha.toDate) {
-        fechaOriginal = data.fecha.toDate();
-      } else if (data.fecha.seconds) {
-        fechaOriginal = new Date(data.fecha.seconds * 1000);
-      } else {
-        fechaOriginal = new Date(data.fecha + "T00:00:00");
-      }
-
-      fechaFormateada = fechaOriginal.toLocaleDateString("es-PE", {
-        timeZone: "America/Lima",
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
-    }
-
-    const li = document.createElement("li");
-    li.classList.add("comunicado-item");
-    li.innerHTML = `
-      <strong>${data.titulo}</strong>
-      <em>${fechaFormateada}</em>
-      <p>${data.descripcion}</p>
-    `;
-    listaComunicados.appendChild(li);
-  });
-}
-
-// ============================
-// 🔸 EJECUTAR AL CARGAR LA PÁGINA
-// ============================
+// 🔹 Ejecutar al cargar la página
 window.addEventListener("DOMContentLoaded", () => {
   cargarComunicados();
 });

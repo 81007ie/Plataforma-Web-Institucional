@@ -14,7 +14,6 @@ import {
   getDoc,
   getDocs,
   query,
-  where,
   orderBy,
   limit,
   updateDoc,
@@ -90,7 +89,7 @@ async function renderAdmin() {
     </div>
 
     <h2>Usuarios</h2>
-    <input id="buscador" placeholder="Buscar por nombre, correo, nivel..." class="input"/>
+    <input id="buscador" placeholder="Buscar por nombre, grado, nivel o rol..." class="input"/>
 
     <table>
       <thead>
@@ -115,6 +114,9 @@ async function renderAdmin() {
   await cargarComunicados();
 }
 
+// ===============================
+//  🔹 MOSTRAR USUARIOS
+// ===============================
 function mostrarUsuarios(lista) {
   const tbody = document.getElementById("tabla-usuarios");
   if (!tbody) return;
@@ -141,12 +143,16 @@ function mostrarUsuarios(lista) {
   }).join("");
 }
 
+// ===============================
+//  🔹 FILTRAR TABLA (ADMIN)
+ // ===============================
 function filtrarTabla(e) {
   const term = e.target.value.toLowerCase();
   const filtrada = listaUsuarios.filter(u =>
     (u.nombre || "").toLowerCase().includes(term) ||
-    (u.correo || "").toLowerCase().includes(term) ||
-    (u.nivel || "").toLowerCase().includes(term)
+    (u.grado || "").toLowerCase().includes(term) ||
+    (u.nivel || "").toLowerCase().includes(term) ||
+    (u.rol || "").toLowerCase().includes(term)
   );
   mostrarUsuarios(filtrada);
 }
@@ -163,7 +169,7 @@ async function renderSubdirector() {
     </div>
 
     <h2>Usuarios</h2>
-    <input id="buscador-sub" placeholder="Buscar..." class="input"/>
+    <input id="buscador-sub" placeholder="Buscar por nombre, grado, nivel o rol..." class="input"/>
 
     <table>
       <thead><tr><th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th></tr></thead>
@@ -187,8 +193,9 @@ async function renderSubdirector() {
     const term = e.target.value.toLowerCase();
     const filtrados = sinAdmins.filter(u =>
       (u.nombre || "").toLowerCase().includes(term) ||
-      (u.correo || "").toLowerCase().includes(term) ||
-      (u.nivel || "").toLowerCase().includes(term)
+      (u.grado || "").toLowerCase().includes(term) ||
+      (u.nivel || "").toLowerCase().includes(term) ||
+      (u.rol || "").toLowerCase().includes(term)
     );
     mostrarUsuarios(filtrados);
   });
