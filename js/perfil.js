@@ -37,7 +37,6 @@ let listaUsuarios = [];
 // ===============================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    await Swal.fire("Sesión", "Debes iniciar sesión.", "info");
     window.location.href = "login.html";
     return;
   }
@@ -87,10 +86,11 @@ async function renderAdmin() {
     <div class="info">
       <p><b>Nombre:</b> ${usuarioActual.nombre}</p>
       <p><b>Rol:</b> ${usuarioActual.rol}</p>
+      <p><b>Correo:</b> ${usuarioActual.correo}</p>
     </div>
 
     <h2>Usuarios</h2>
-    <input id="buscador" placeholder="Buscar por nombre, correo, nivel..." />
+    <input id="buscador" placeholder="Buscar por nombre, correo, nivel..." class="input"/>
 
     <table>
       <thead>
@@ -99,7 +99,7 @@ async function renderAdmin() {
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
-    <h2>5 Comunicados Recientes</h2>
+    <h2>Comunicados Recientes</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
       <tbody id="lista-comunicados"></tbody>
@@ -159,17 +159,18 @@ async function renderSubdirector() {
     <div class="info">
       <p><b>Nombre:</b> ${usuarioActual.nombre}</p>
       <p><b>Rol:</b> ${usuarioActual.rol}</p>
+      <p><b>Correo:</b> ${usuarioActual.correo}</p>
     </div>
 
-    <h2>Usuarios (sin Administrativos)</h2>
-    <input id="buscador-sub" placeholder="Buscar por nombre, correo, nivel..." />
+    <h2>Usuarios</h2>
+    <input id="buscador-sub" placeholder="Buscar..." class="input"/>
 
     <table>
       <thead><tr><th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th></tr></thead>
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
-    <h2>5 Comunicados Recientes</h2>
+    <h2>Comunicados Recientes</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
       <tbody id="lista-comunicados"></tbody>
@@ -180,20 +181,8 @@ async function renderSubdirector() {
   const todos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   const sinAdmins = todos.filter(u => (u.rol || "").toLowerCase() !== "administrativo");
 
-  const tbody = document.getElementById("tabla-usuarios");
-  tbody.innerHTML = sinAdmins.length === 0
-    ? `<tr><td colspan="5">No hay usuarios</td></tr>`
-    : sinAdmins.map(u => `
-        <tr>
-          <td>${escapeHtml(u.nombre || "-")}</td>
-          <td>${escapeHtml(u.correo || "-")}</td>
-          <td>${escapeHtml(u.grado || "-")}</td>
-          <td>${escapeHtml(u.nivel || "-")}</td>
-          <td>${escapeHtml(u.rol || "-")}</td>
-        </tr>
-      `).join("");
+  mostrarUsuarios(sinAdmins);
 
-  // Buscador Subdirector
   document.getElementById("buscador-sub").addEventListener("input", e => {
     const term = e.target.value.toLowerCase();
     const filtrados = sinAdmins.filter(u =>
@@ -201,17 +190,7 @@ async function renderSubdirector() {
       (u.correo || "").toLowerCase().includes(term) ||
       (u.nivel || "").toLowerCase().includes(term)
     );
-
-    const tbody2 = document.getElementById("tabla-usuarios");
-    tbody2.innerHTML = filtrados.map(u => `
-      <tr>
-        <td>${escapeHtml(u.nombre || "-")}</td>
-        <td>${escapeHtml(u.correo || "-")}</td>
-        <td>${escapeHtml(u.grado || "-")}</td>
-        <td>${escapeHtml(u.nivel || "-")}</td>
-        <td>${escapeHtml(u.rol || "-")}</td>
-      </tr>
-    `).join("");
+    mostrarUsuarios(filtrados);
   });
 
   await cargarComunicados();
@@ -230,7 +209,7 @@ async function renderSoloComunicados() {
       <p><b>Nivel:</b> ${usuarioActual.nivel || "-"}</p>
     </div>
 
-    <h2>5 Comunicados Recientes</h2>
+    <h2>Comunicados Recientes</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
       <tbody id="lista-comunicados"></tbody>
@@ -248,7 +227,12 @@ async function cargarComunicados() {
   if (!tbody) return;
 
   try {
-    const q = query(collection(db, "comunicados"), orderBy("timestamp", "desc"), limit(5));
+    const q = query(
+      collection(db, "comunicados"),
+      orderBy("fechaRegistro", "desc"),
+      limit(5)
+    );
+
     const snap = await getDocs(q);
 
     if (snap.empty) {
@@ -266,6 +250,7 @@ async function cargarComunicados() {
         </tr>
       `;
     }).join("");
+
   } catch (err) {
     console.error(err);
     tbody.innerHTML = `<tr><td colspan="3">Error al cargar comunicados.</td></tr>`;
@@ -273,7 +258,7 @@ async function cargarComunicados() {
 }
 
 // ===============================
-//  ✏️ EDITAR USUARIO (solo Admin)
+//  ✏️ EDITAR USUARIO (Admin)
 // ===============================
 window.__editarUsuario = async function (uid) {
   let usuario = listaUsuarios.find(u => u.id === uid);
@@ -287,7 +272,6 @@ window.__editarUsuario = async function (uid) {
     usuario = { id: s.id, ...s.data() };
   }
 
-  // Rellenar modal
   document.getElementById("nombre-input").value = usuario.nombre || "";
   document.getElementById("correo-input").value = usuario.correo || "";
   document.getElementById("grado-input").value = usuario.grado || "";
@@ -298,12 +282,12 @@ window.__editarUsuario = async function (uid) {
 };
 
 // ===============================
-//  ❌ ELIMINAR USUARIO (solo Admin)
+//  ❌ ELIMINAR USUARIO (Admin)
 // ===============================
 window.__eliminarUsuario = async function (uid) {
   const res = await Swal.fire({
     title: "Eliminar usuario",
-    text: "Esta acción es irreversible. ¿Deseas continuar?",
+    text: "Esta acción es irreversible.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Sí, eliminar"

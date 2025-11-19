@@ -12,7 +12,7 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  background-color: var(--azul-borde);
+  background-color: var(--celeste);
   color: var(--blanco);
   display: flex;
   justify-content: space-between;
@@ -37,14 +37,18 @@ body {
 
 /* Page title */
 #titulo-pantalla {
-  margin: 90px 20px 10px; /* margen superior para navbar fijo */
+  margin: 90px 20px 10px;
   font-size: 22px;
   text-align: center;
   color: #333;
 }
 
 /* Main container */
-main { padding: 18px; max-width: 1100px; margin: 0 auto; }
+main {
+  padding: 18px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 
 /* Info box */
 .info {
@@ -76,7 +80,6 @@ table {
   overflow: hidden;
   box-shadow: 0 6px 20px rgba(0,0,0,0.04);
   margin-bottom: 20px;
-  table-layout: fixed;
 }
 thead th {
   background: var(--celeste-claro);
@@ -101,7 +104,10 @@ button {
   cursor: pointer;
   font-weight: 600;
 }
-button:hover { transform: translateY(-1px); transition: 0.12s; }
+button:hover {
+  transform: translateY(-1px);
+  transition: 0.12s;
+}
 
 button.edit {
   background: #00aaff;
@@ -116,8 +122,10 @@ button.view {
   color: white;
 }
 
-/* Modal */
-.modal {
+/* ===========================
+   MODAL ACTUALIZADO PARA EL JS
+   ===========================*/
+#modal-usuario.modal {
   display: none;
   position: fixed;
   inset: 0;
@@ -126,7 +134,10 @@ button.view {
   align-items: center;
   z-index: 2000;
 }
-.modal[aria-hidden="false"] { display: flex; }
+
+#modal-usuario[aria-hidden="false"] {
+  display: flex;
+}
 
 .modal-content {
   background: #fff;
@@ -136,13 +147,20 @@ button.view {
   max-width: 480px;
   box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
-.modal-content h2 { margin: 0 0 12px; font-size: 20px; text-align:center; }
+
+.modal-content h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  text-align: center;
+}
+
 .modal-content label {
   display: block;
   margin-bottom: 10px;
   font-size: 13px;
   color: #333;
 }
+
 .modal-content input {
   width: 100%;
   padding: 10px 12px;
@@ -150,7 +168,18 @@ button.view {
   border: 1px solid #e0e6ef;
   margin-top: 6px;
 }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+/* Actions del modal que usa el JS */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.modal-actions button {
+  min-width: 90px;
+}
 
 /* Responsive */
 @media (max-width: 800px) {
