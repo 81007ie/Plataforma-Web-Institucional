@@ -1,227 +1,197 @@
-// ===============================
-// 📢 MÓDULO DE COMUNICADOS (ACTUALIZADO FINAL)
-// ===============================
-
-import { auth, db } from "./firebaseconfig.js";
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  getDoc,
-  serverTimestamp
+import { db } from "./firebaseconfig.js";
+import { 
+  collection, addDoc, getDocs, deleteDoc, updateDoc, doc, serverTimestamp, query, orderBy 
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// =====================================
-// 🔹 ELEMENTOS DEL DOM
-// =====================================
-const form = document.getElementById("form-comunicado");
-const listaComunicados = document.getElementById("lista-comunicados");
+// ======================
+// 🔹 Obtener usuario
+// ======================
+const usuario = JSON.parse(localStorage.getItem("usuario"));
 const formularioSection = document.getElementById("formulario-section");
+const listaComunicados = document.getElementById("lista-comunicados");
 
-// Modal
-const modalEditar = document.getElementById("modalEditar");
-const nuevoTexto = document.getElementById("nuevoTexto");
-const btnGuardarCambios = document.getElementById("guardarCambios");
-const btnCancelarEdicion = document.getElementById("cancelarEdicion");
+if (!usuario) window.location.href = "login.html";
+else if (usuario.rol === "Administrativo") formularioSection.classList.remove("oculto");
 
-let idComunicadoEditando = null;
-let rolUsuario = null;
+// 🔹 Referencia colección
+const comunicadosRef = collection(db, "comunicados");
 
-// =====================================
-// 🔹 CACHE LOCAL
-// =====================================
-let cacheComunicados = [];
-
-if (localStorage.getItem("comunicados_cache")) {
-  const data = JSON.parse(localStorage.getItem("comunicados_cache"));
-  cacheComunicados = data.comunicados || [];
-  renderizarComunicados(cacheComunicados);
+// ======================
+// 🔹 Formatear fecha
+// ======================
+function formatearFecha(fechaStr) {
+  const fecha = new Date(fechaStr + "T00:00:00");
+  return fecha.toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" });
 }
 
-// =====================================
-// 🔹 DETECTAR USUARIO Y ROL
-// =====================================
-auth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    window.location.href = "login.html";
-    return;
-  }
+// ======================
+// 🔹 Convertir fecha legible → formato input
+// ======================
+function formatearInputDate(texto) {
+  // Ejemplo recibido: "15 de noviembre de 2025"
+  const meses = {
+    enero: "01", febrero: "02", marzo: "03", abril: "04",
+    mayo: "05", junio: "06", julio: "07", agosto: "08",
+    septiembre: "09", octubre: "10", noviembre: "11", diciembre: "12"
+  };
 
-  // Obtener rol desde Firestore
-  const snap = await getDoc(doc(db, "usuarios", user.uid));
+  const partes = texto.split(" ");
+  if (partes.length !== 4) return "";
 
-  if (snap.exists()) {
-    rolUsuario = snap.data().rol;
-    controlarAccesos(rolUsuario);
-  }
+  const dia = partes[0];
+  const mes = partes[2];
+  const año = partes[3];
 
-  iniciarLecturaComunicados();
-});
-
-// =====================================
-// 🔹 CONTROL DE ACCESO
-// =====================================
-function controlarAccesos(rol) {
-  if (rol === "Administrativo" || rol === "Subdirector") {
-    formularioSection.classList.remove("oculto");
-  } else {
-    formularioSection.classList.add("oculto");
-  }
+  return `${año}-${meses[mes.toLowerCase()]}-${dia.padStart(2, "0")}`;
 }
 
-// =====================================
-// 🔹 LECTURA AUTOMÁTICA FIRESTORE
-// =====================================
-function iniciarLecturaComunicados() {
-  const ref = collection(db, "comunicados");
+// ======================
+// 🔹 Cargar comunicados
+// ======================
+async function cargarComunicados() {
+  listaComunicados.innerHTML = "<p>Cargando comunicados...</p>";
 
-  onSnapshot(ref, (snapshot) => {
-    const nuevos = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data()
-    }));
+  const q = query(comunicadosRef, orderBy("fechaRegistro", "desc"));
+  const snapshot = await getDocs(q);
 
-    // Ordenar por fecha
-    nuevos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-    cacheComunicados = nuevos;
-    renderizarComunicados(cacheComunicados);
-
-    localStorage.setItem(
-      "comunicados_cache",
-      JSON.stringify({ comunicados: nuevos, timestamp: Date.now() })
-    );
-  });
-}
-
-// =====================================
-// 🔹 RENDERIZAR COMUNICADOS
-// =====================================
-function renderizarComunicados(lista) {
   listaComunicados.innerHTML = "";
 
-  if (lista.length === 0) {
-    listaComunicados.innerHTML = "<p class='vacio'>No hay comunicados aún.</p>";
+  if (snapshot.empty) {
+    listaComunicados.innerHTML = "<p>No hay comunicados por el momento.</p>";
     return;
   }
 
-  lista.forEach((item) => {
+  snapshot.forEach((docu) => {
+    const data = docu.data();
     const div = document.createElement("div");
     div.className = "comunicado";
 
+    const fechaFormateada = data.fecha ? formatearFecha(data.fecha) : "Desconocida";
+
     div.innerHTML = `
-      <div class="contenido">
-        <h3>${item.titulo}</h3>
-        <p>${item.descripcion}</p>
-        <span class="fecha">📅 ${item.fecha}</span><br>
-        <span class="creado">👤 Creado por: ${item.creadoPor || "Desconocido"}</span>
+      <div>
+        <h3>${data.titulo}</h3>
+        <p>${data.descripcion}</p>
+        <small>📅 ${fechaFormateada} — ✍️ ${data.creadoPor || "Desconocido"}</small>
       </div>
-
-      <div class="acciones">
-        ${
-          rolUsuario === "Administrativo" || rolUsuario === "Subdirector"
-            ? `
-           <button class="edit-btn">✏️</button>
-           <button class="delete-btn">🗑️</button>
-        `
-            : ""
-        }
-      </div>
+      ${usuario.rol === "Administrativo" ? `
+        <div class="acciones">
+          <button class="edit-btn" data-id="${docu.id}">✏️</button>
+          <button class="delete-btn" data-id="${docu.id}">🗑️</button>
+        </div>
+      ` : ""}
     `;
-
-    // Solo permitir editar/eliminar a roles autorizados
-    if (rolUsuario === "Administrativo" || rolUsuario === "Subdirector") {
-      div.querySelector(".edit-btn").onclick = () => abrirModalEdicion(item);
-      div.querySelector(".delete-btn").onclick = () => eliminarComunicado(item.id);
-    }
-
     listaComunicados.appendChild(div);
   });
+
+  agregarEventosCRUD();
 }
 
-// =====================================
-// 🔹 AGREGAR COMUNICADO
-// =====================================
-form.addEventListener("submit", async (e) => {
+// ======================
+// 🔹 Guardar nuevo comunicado
+// ======================
+document.getElementById("form-comunicado")?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const titulo = document.getElementById("titulo").value.trim();
+  const fecha = document.getElementById("fecha").value;
+  const descripcion = document.getElementById("descripcion").value.trim();
 
-  // Solo permitir agregar si el rol es válido
-  if (rolUsuario !== "Administrativo" && rolUsuario !== "Subdirector") {
-    return alert("No tienes permiso para agregar comunicados.");
-  }
+  if (!titulo || !fecha || !descripcion) return alert("Completa todos los campos.");
 
-  const titulo = form.titulo.value.trim();
-  const descripcion = form.descripcion.value.trim();
-  const fecha = form.fecha.value;
-
-  if (!titulo || !descripcion || !fecha) {
-    alert("Completa todos los campos");
-    return;
-  }
-
-  await addDoc(collection(db, "comunicados"), {
+  await addDoc(comunicadosRef, {
     titulo,
     descripcion,
     fecha,
-    creadoPor: auth.currentUser.email,
+    creadoPor: usuario.nombre,
     fechaRegistro: serverTimestamp()
   });
 
-  form.reset();
+  e.target.reset();
+  cargarComunicados();
 });
 
-// =====================================
-// 🔹 ELIMINAR COMUNICADO
-// =====================================
-async function eliminarComunicado(id) {
-  if (!confirm("¿Eliminar comunicado?")) return;
-  await deleteDoc(doc(db, "comunicados", id));
-}
-
-// =====================================
-// 🔹 ABRIR MODAL PARA EDITAR
-// =====================================
-function abrirModalEdicion(comunicado) {
-  idComunicadoEditando = comunicado.id;
-
-  nuevoTexto.value =
-    `Título: ${comunicado.titulo}\n\n` +
-    `Descripción:\n${comunicado.descripcion}\n\n` +
-    `Fecha: ${comunicado.fecha}`;
-
-  modalEditar.classList.add("mostrar");
-}
-
-// =====================================
-// 🔹 GUARDAR EDICIÓN
-// =====================================
-btnGuardarCambios.onclick = async () => {
-  if (!idComunicadoEditando) return;
-
-  const texto = nuevoTexto.value.trim();
-  if (!texto) return alert("El comunicado no puede quedar vacío.");
-
-  const lineas = texto.split("\n");
-
-  const titulo = lineas[0].replace("Título: ", "").trim();
-  const descripcion = lineas[2].trim();
-  const fecha = lineas[4].replace("Fecha: ", "").trim();
-
-  await updateDoc(doc(db, "comunicados", idComunicadoEditando), {
-    titulo,
-    descripcion,
-    fecha
+// ======================
+// 🔹 CRUD → editar y eliminar
+// ======================
+function agregarEventosCRUD() {
+  // Eliminar
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      if (confirm("¿Eliminar este comunicado?")) {
+        await deleteDoc(doc(db, "comunicados", id));
+        cargarComunicados();
+      }
+    });
   });
 
-  modalEditar.classList.remove("mostrar");
-};
+  // Editar
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const div = btn.closest(".comunicado");
+      const h3 = div.querySelector("h3");
+      const p = div.querySelector("p");
+      const fechaSmall = div.querySelector("small");
+      const fechaActual = fechaSmall.textContent.split("—")[0].replace("📅 ", "").trim();
 
-// =====================================
-// 🔹 CANCELAR EDICIÓN
-// =====================================
-btnCancelarEdicion.onclick = () => {
-  modalEditar.classList.remove("mostrar");
-};
+      mostrarModalEditar(id, h3.textContent, p.textContent, fechaActual);
+    });
+  });
+}
+
+// ======================
+// 🔹 Modal de edición elegante
+// ======================
+function mostrarModalEditar(id, tituloActual, descActual, fechaActual) {
+  const modal = document.createElement("div");
+  modal.className = "modal-editar";
+  modal.innerHTML = `
+    <div class="modal-contenido">
+      <h2>Editar Comunicado</h2>
+
+      <label>Título:</label>
+      <input type="text" id="edit-titulo" value="${tituloActual}">
+
+      <label>Descripción:</label>
+      <textarea id="edit-descripcion">${descActual}</textarea>
+
+      <label>Fecha:</label>
+      <input type="date" id="edit-fecha" value="${formatearInputDate(fechaActual)}">
+
+      <div class="modal-botones">
+        <button id="guardar-cambios">Guardar</button>
+        <button id="cancelar">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector("#cancelar").addEventListener("click", () => modal.remove());
+
+  modal.querySelector("#guardar-cambios").addEventListener("click", async () => {
+    const nuevoTitulo = document.getElementById("edit-titulo").value.trim();
+    const nuevaDescripcion = document.getElementById("edit-descripcion").value.trim();
+    const nuevaFecha = document.getElementById("edit-fecha").value;
+
+    if (!nuevoTitulo || !nuevaDescripcion || !nuevaFecha) {
+      alert("Completa todos los campos.");
+      return;
+    }
+
+    await updateDoc(doc(db, "comunicados", id), {
+      titulo: nuevoTitulo,
+      descripcion: nuevaDescripcion,
+      fecha: nuevaFecha
+    });
+
+    modal.remove();
+    cargarComunicados();
+  });
+}
+
+// ======================
+// 🔹 Inicializar
+// ======================
+cargarComunicados();

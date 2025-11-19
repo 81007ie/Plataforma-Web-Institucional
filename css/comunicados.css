@@ -14,8 +14,8 @@ nav.navbar {
 
 nav.navbar .logo { font-size: 22px; font-weight: bold; color: var(--blanco); }
 nav.navbar .nav-links { display: flex; gap: 20px; list-style: none; }
-nav.navbar .nav-links li a { color: var(--blanco); text-decoration: none; font-weight: 500; transition: color 0.3s ease; }
-nav.navbar .nav-links li a:hover { color: var(--azul-oscuro); text-decoration: underline; }
+nav.navbar .nav-links li a { color: var(--blanco); text-decoration: none; font-weight: 500; }
+nav.navbar .nav-links li a:hover { color: var(--azul-oscuro); }
 
 /* ====== Contenedor principal ====== */
 main.contenedor {
@@ -54,7 +54,6 @@ main.contenedor {
   border-radius: 5px;
   padding: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
 }
 
 #form-comunicado button:hover {
@@ -78,126 +77,77 @@ main.contenedor {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
 }
 
-.comunicado h3 { margin: 0; color: var(--azul-oscuro); font-size: 16px; }
-.comunicado p { margin: 0; font-size: 14px; }
+.comunicado h3 { color: var(--azul-oscuro); font-size: 16px; }
+.comunicado p { font-size: 14px; margin-top: 4px; }
 .comunicado small { color: var(--gris); font-size: 12px; }
 
-/* ===== Botones de acción ===== */
+/* Botones de acción */
 .comunicado .acciones { display: flex; gap: 5px; }
-
-.comunicado .edit-btn {
-  background-color: #f39c12;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.comunicado .edit-btn:hover {
-  background-color: #d68910;
-}
-
-.comunicado .delete-btn {
-  background-color: var(--rojo);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.comunicado .delete-btn:hover {
-  background-color: #c0392b;
-}
-
+.edit-btn { background-color: #f39c12; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+.edit-btn:hover { background-color: #d68910; }
+.delete-btn { background-color: var(--rojo); color: #fff; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+.delete-btn:hover { background-color: #c0392b; }
 
 /* Secciones ocultas */
-section#formulario-section.oculto { display: none; }
+#formulario-section.oculto { display: none; }
 
-/* Encabezados */
-section#formulario-section h2,
-section#lista-section h2 { margin-bottom: 10px; color: var(--azul-oscuro); }
-
-/* Scroll estilizado */
+/* Scroll */
 #lista-comunicados::-webkit-scrollbar { width: 6px; }
-#lista-comunicados::-webkit-scrollbar-thumb { background-color: var(--celeste); border-radius: 3px; }
+#lista-comunicados::-webkit-scrollbar-thumb { background-color: var(--celeste); }
 
-/* ========= MODAL COMPATIBLE CON HTML Y JS ========= */
-
-.modal {
+/* ======= MODAL DE EDICIÓN ======= */
+.modal-editar {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: none;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999;
 }
 
-.modal.mostrar {
-  display: flex !important;
-}
-
-.modal-content {
-  background: white;
+.modal-contenido {
+  background: var(--blanco);
   padding: 20px;
-  border-radius: 12px;
   width: 90%;
-  max-width: 450px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-.modal-content h3 {
-  margin-bottom: 10px;
+.modal-contenido h2 {
+  text-align: center;
+  margin-bottom: 15px;
   color: var(--azul-oscuro);
 }
 
-.modal-content textarea {
+.modal-contenido input,
+.modal-contenido textarea {
   width: 100%;
   padding: 10px;
-  resize: vertical;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--azul-borde);
+  margin-bottom: 10px;
 }
 
-.modal-actions {
-  margin-top: 15px;
+.modal-botones {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  justify-content: space-between;
+  margin-top: 10px;
 }
 
-.modal-actions button {
-  padding: 8px 14px;
+.modal-botones button {
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-#guardarCambios {
-  background-color: var(--celeste);
   color: white;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-#guardarCambios:hover {
-  background-color: var(--azul-borde);
-}
+#guardar-cambios { background: var(--celeste); }
+#guardar-cambios:hover { background: var(--azul-borde); }
 
-#cancelarEdicion {
-  background-color: #ccc;
-  color: #333;
-}
-
-#cancelarEdicion:hover {
-  background-color: #b4b4b4;
-}
+#cancelar { background: var(--rojo); }
+#cancelar:hover { background: #c62828; }

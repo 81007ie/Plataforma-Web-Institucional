@@ -20,7 +20,7 @@
   </nav>
 
   <main class="contenedor">
-    <!-- Formulario solo visible para admin -->
+    <!-- Formulario visible solo para administradores -->
     <section id="formulario-section" class="oculto">
       <h2>Nuevo Comunicado</h2>
       <form id="form-comunicado">
@@ -38,18 +38,8 @@
     </section>
   </main>
 
-  <!-- 🧩 Modal para editar comunicado (SE CONSERVA) -->
-  <div id="modalEditar" class="modal">
-    <div class="modal-content">
-      <h3>Editar Comunicado</h3>
-      <textarea id="nuevoTexto" rows="4" placeholder="Escribe el nuevo texto..."></textarea>
-      <div class="modal-actions">
-        <button id="guardarCambios">Guardar</button>
-        <button id="cancelarEdicion">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- Modal dinámico (JS lo inyecta) -->
+  
   <script type="module" src="js/comunicados.js"></script>
 </body>
 </html>
