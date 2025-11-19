@@ -1,10 +1,4 @@
-/* ====== Reset y Body ====== */
-:root{
-  --font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
-  --celeste: #1e3c72;
-  --celeste-claro: #6EC1E4;
-  --blanco: #ffffff;
-}
+
 
 * { box-sizing: border-box; }
 body {
