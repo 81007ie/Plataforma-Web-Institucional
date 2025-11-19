@@ -24,7 +24,7 @@ import {
 // DOM
 const contenido = document.getElementById("contenido");
 const tituloPantalla = document.getElementById("titulo-pantalla");
-const modal = document.getElementById("modal-profesor");
+const modal = document.getElementById("modal-usuario");
 const guardarBtn = document.getElementById("guardar-btn");
 const cancelarBtn = document.getElementById("cancelar-btn");
 
