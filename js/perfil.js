@@ -20,39 +20,37 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// DOM
+// ===============================
+// 🔹 DOM
+// ===============================
 const contenido = document.getElementById("contenido");
 const tituloPantalla = document.getElementById("titulo-pantalla");
 const modal = document.getElementById("modal-usuario");
 const guardarBtn = document.getElementById("guardar-btn");
 const cancelarBtn = document.getElementById("cancelar-btn");
 
-// Estado
 let usuarioActual = null;
 let listaUsuarios = [];
 
 // ===============================
-//  ESCUCHAR AUTENTICACIÓN
+// 🔹 AUTENTICACIÓN
 // ===============================
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "login.html";
+  if (!user) return (window.location.href = "login.html");
+
+  const ref = doc(db, "usuarios", user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    Swal.fire("Error", "No se encontraron tus datos.", "error");
     return;
   }
 
-  const userRef = doc(db, "usuarios", user.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists()) {
-    await Swal.fire("Error", "No se encontraron tus datos.", "error");
-    return;
-  }
-
-  usuarioActual = userSnap.data();
+  usuarioActual = snap.data();
   tituloPantalla.textContent = `Perfil — ${usuarioActual.rol}`;
 
-  // Cerrar sesión
-  document.getElementById("btnCerrar").addEventListener("click", async () => {
+  // BOTÓN DE CERRAR SESIÓN
+  document.getElementById("btnCerrar")?.addEventListener("click", async () => {
     const res = await Swal.fire({
       title: "Cerrar sesión",
       text: "¿Deseas cerrar sesión?",
@@ -60,6 +58,7 @@ onAuthStateChanged(auth, async (user) => {
       showCancelButton: true,
       confirmButtonText: "Sí, cerrar"
     });
+
     if (res.isConfirmed) {
       await signOut(auth);
       localStorage.clear();
@@ -67,7 +66,7 @@ onAuthStateChanged(auth, async (user) => {
     }
   });
 
-  // Render según rol
+  // RENDER SEGÚN ROL
   if (usuarioActual.rol === "Administrativo") {
     await renderAdmin();
   } else if (usuarioActual.rol === "Subdirector") {
@@ -78,14 +77,14 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ===============================
-//  🔵 RENDER ADMINISTRATIVO
+// 🔵 RENDER ADMINISTRATIVO
 // ===============================
 async function renderAdmin() {
   contenido.innerHTML = `
     <div class="info">
-      <p><b>Nombre:</b> ${usuarioActual.nombre}</p>
-      <p><b>Rol:</b> ${usuarioActual.rol}</p>
-      <p><b>Correo:</b> ${usuarioActual.correo}</p>
+      <p><b>Nombre:</b> ${escapeHtml(usuarioActual.nombre)}</p>
+      <p><b>Rol:</b> ${escapeHtml(usuarioActual.rol)}</p>
+      <p><b>Correo:</b> ${escapeHtml(usuarioActual.correo)}</p>
     </div>
 
     <h2>Usuarios</h2>
@@ -93,7 +92,9 @@ async function renderAdmin() {
 
     <table>
       <thead>
-        <tr><th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th><th>Acciones</th></tr>
+        <tr>
+          <th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th><th>Acciones</th>
+        </tr>
       </thead>
       <tbody id="tabla-usuarios"></tbody>
     </table>
@@ -105,7 +106,7 @@ async function renderAdmin() {
     </table>
   `;
 
-  document.getElementById("buscador").addEventListener("input", filtrarTabla);
+  document.getElementById("buscador")?.addEventListener("input", filtrarTabla);
 
   const snap = await getDocs(collection(db, "usuarios"));
   listaUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -115,7 +116,7 @@ async function renderAdmin() {
 }
 
 // ===============================
-//  🔹 MOSTRAR USUARIOS
+// 🔹 MOSTRAR USUARIOS
 // ===============================
 function mostrarUsuarios(lista) {
   const tbody = document.getElementById("tabla-usuarios");
@@ -126,8 +127,8 @@ function mostrarUsuarios(lista) {
     return;
   }
 
-  tbody.innerHTML = lista.map(u => {
-    return `
+  tbody.innerHTML = lista
+    .map(u => `
       <tr>
         <td>${escapeHtml(u.nombre || "-")}</td>
         <td>${escapeHtml(u.correo || "-")}</td>
@@ -135,44 +136,54 @@ function mostrarUsuarios(lista) {
         <td>${escapeHtml(u.nivel || "-")}</td>
         <td>${escapeHtml(u.rol || "-")}</td>
         <td>
-          <button class="edit" onclick="window.__editarUsuario('${u.id}')">Editar</button>
-          <button class="delete" onclick="window.__eliminarUsuario('${u.id}')">Eliminar</button>
+          ${
+            usuarioActual.rol === "Administrativo"
+              ? `
+                <button class="edit" onclick="window.__editarUsuario('${u.id}')">Editar</button>
+                <button class="delete" onclick="window.__eliminarUsuario('${u.id}')">Eliminar</button>
+              `
+              : ""
+          }
         </td>
       </tr>
-    `;
-  }).join("");
+    `)
+    .join("");
 }
 
 // ===============================
-//  🔹 FILTRAR TABLA (ADMIN)
- // ===============================
+// 🔹 FILTRAR TABLA (AGREGA GRADO)
+// ===============================
 function filtrarTabla(e) {
   const term = e.target.value.toLowerCase();
+
   const filtrada = listaUsuarios.filter(u =>
     (u.nombre || "").toLowerCase().includes(term) ||
     (u.grado || "").toLowerCase().includes(term) ||
     (u.nivel || "").toLowerCase().includes(term) ||
     (u.rol || "").toLowerCase().includes(term)
   );
+
   mostrarUsuarios(filtrada);
 }
 
 // ===============================
-//  🟣 RENDER SUBDIRECTOR
+// 🟣 RENDER SUBDIRECTOR
 // ===============================
 async function renderSubdirector() {
   contenido.innerHTML = `
     <div class="info">
-      <p><b>Nombre:</b> ${usuarioActual.nombre}</p>
-      <p><b>Rol:</b> ${usuarioActual.rol}</p>
-      <p><b>Correo:</b> ${usuarioActual.correo}</p>
+      <p><b>Nombre:</b> ${escapeHtml(usuarioActual.nombre)}</p>
+      <p><b>Rol:</b> ${escapeHtml(usuarioActual.rol)}</p>
+      <p><b>Correo:</b> ${escapeHtml(usuarioActual.correo)}</p>
     </div>
 
     <h2>Usuarios</h2>
     <input id="buscador-sub" placeholder="Buscar por nombre, grado, nivel o rol..." class="input"/>
 
     <table>
-      <thead><tr><th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th></tr></thead>
+      <thead>
+        <tr><th>Nombre</th><th>Correo</th><th>Grado</th><th>Nivel</th><th>Rol</th></tr>
+      </thead>
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
@@ -185,11 +196,12 @@ async function renderSubdirector() {
 
   const snap = await getDocs(collection(db, "usuarios"));
   const todos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
   const sinAdmins = todos.filter(u => (u.rol || "").toLowerCase() !== "administrativo");
 
   mostrarUsuarios(sinAdmins);
 
-  document.getElementById("buscador-sub").addEventListener("input", e => {
+  document.getElementById("buscador-sub")?.addEventListener("input", e => {
     const term = e.target.value.toLowerCase();
     const filtrados = sinAdmins.filter(u =>
       (u.nombre || "").toLowerCase().includes(term) ||
@@ -204,16 +216,16 @@ async function renderSubdirector() {
 }
 
 // ===============================
-//  🟢 PROFESOR / OTROS ROLES
+// 🟢 OTROS ROLES
 // ===============================
 async function renderSoloComunicados() {
   contenido.innerHTML = `
     <div class="info">
-      <p><b>Nombre:</b> ${usuarioActual.nombre}</p>
-      <p><b>Rol:</b> ${usuarioActual.rol}</p>
-      <p><b>Correo:</b> ${usuarioActual.correo || "-"}</p>
-      <p><b>Grado:</b> ${usuarioActual.grado || "-"}</p>
-      <p><b>Nivel:</b> ${usuarioActual.nivel || "-"}</p>
+      <p><b>Nombre:</b> ${escapeHtml(usuarioActual.nombre)}</p>
+      <p><b>Rol:</b> ${escapeHtml(usuarioActual.rol)}</p>
+      <p><b>Correo:</b> ${escapeHtml(usuarioActual.correo || "-")}</p>
+      <p><b>Grado:</b> ${escapeHtml(usuarioActual.grado || "-")}</p>
+      <p><b>Nivel:</b> ${escapeHtml(usuarioActual.nivel || "-")}</p>
     </div>
 
     <h2>Comunicados Recientes</h2>
@@ -227,36 +239,38 @@ async function renderSoloComunicados() {
 }
 
 // ===============================
-//  📢 CARGAR 5 COMUNICADOS
+// 📢 CARGAR COMUNICADOS
 // ===============================
 async function cargarComunicados() {
   const tbody = document.getElementById("lista-comunicados");
   if (!tbody) return;
 
   try {
-    const q = query(
+    const qx = query(
       collection(db, "comunicados"),
       orderBy("fechaRegistro", "desc"),
       limit(5)
     );
 
-    const snap = await getDocs(q);
+    const snap = await getDocs(qx);
 
     if (snap.empty) {
       tbody.innerHTML = `<tr><td colspan="3">No hay comunicados.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = snap.docs.map(d => {
-      const c = d.data();
-      return `
-        <tr>
-          <td>${escapeHtml(c.titulo || "-")}</td>
-          <td>${escapeHtml(c.descripcion || "-")}</td>
-          <td>${escapeHtml(c.fecha || "-")}</td>
-        </tr>
-      `;
-    }).join("");
+    tbody.innerHTML = snap.docs
+      .map(d => {
+        const c = d.data();
+        return `
+          <tr>
+            <td>${escapeHtml(c.titulo || "-")}</td>
+            <td>${escapeHtml(c.descripcion || "-")}</td>
+            <td>${escapeHtml(c.fecha || "-")}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
   } catch (err) {
     console.error(err);
@@ -265,18 +279,18 @@ async function cargarComunicados() {
 }
 
 // ===============================
-//  ✏️ EDITAR USUARIO (Admin)
+// ✏ EDITAR USUARIO
 // ===============================
-window.__editarUsuario = async function (uid) {
+window.__editarUsuario = async (uid) => {
   let usuario = listaUsuarios.find(u => u.id === uid);
 
   if (!usuario) {
-    const s = await getDoc(doc(db, "usuarios", uid));
-    if (!s.exists()) {
+    const snap = await getDoc(doc(db, "usuarios", uid));
+    if (!snap.exists()) {
       Swal.fire("Error", "Usuario no encontrado.", "error");
       return;
     }
-    usuario = { id: s.id, ...s.data() };
+    usuario = { id: snap.id, ...snap.data() };
   }
 
   document.getElementById("nombre-input").value = usuario.nombre || "";
@@ -289,34 +303,31 @@ window.__editarUsuario = async function (uid) {
 };
 
 // ===============================
-//  ❌ ELIMINAR USUARIO (Admin)
+// ❌ ELIMINAR USUARIO
 // ===============================
-window.__eliminarUsuario = async function (uid) {
+window.__eliminarUsuario = async (uid) => {
   const res = await Swal.fire({
     title: "Eliminar usuario",
     text: "Esta acción es irreversible.",
     icon: "warning",
     showCancelButton: true,
-    confirmButtonText: "Sí, eliminar"
+    confirmButtonText: "Eliminar"
   });
 
   if (!res.isConfirmed) return;
 
   try {
     await deleteDoc(doc(db, "usuarios", uid));
-
     listaUsuarios = listaUsuarios.filter(u => u.id !== uid);
     mostrarUsuarios(listaUsuarios);
-
     Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
   } catch (err) {
-    console.error(err);
     Swal.fire("Error", "No se pudo eliminar.", "error");
   }
 };
 
 // ===============================
-//  💾 GUARDAR EDICIÓN
+// 💾 GUARDAR EDICIÓN
 // ===============================
 guardarBtn?.addEventListener("click", async () => {
   const uid = modal.dataset.uid;
@@ -346,7 +357,6 @@ guardarBtn?.addEventListener("click", async () => {
 
     Swal.fire("Actualizado", "Usuario actualizado correctamente.", "success");
   } catch (err) {
-    console.error(err);
     Swal.fire("Error", "No se pudo actualizar.", "error");
   }
 });
@@ -356,12 +366,20 @@ cancelarBtn?.addEventListener("click", () => {
 });
 
 // ===============================
-//  🛠 UTILIDAD
+// 🔧 UTILIDAD DE SEGURIDAD
 // ===============================
 function escapeHtml(str) {
   if (typeof str !== "string") return str;
+
   return str.replace(/[&<>"'/]/g, (s) => {
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' };
+    const map = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+      "/": "&#x2F;"
+    };
     return map[s];
   });
 }

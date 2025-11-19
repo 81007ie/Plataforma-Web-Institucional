@@ -17,30 +17,44 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 14px 22px;
   z-index: 1000;
 }
 .navbar .logo { font-size: 20px; font-weight: 700; }
-.nav-links { list-style: none; display: flex; gap: 18px; margin: 0; padding: 0; align-items:center; }
-.nav-links a { color: var(--blanco); text-decoration: none; font-weight:600; }
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-links a {
+  color: var(--blanco);
+  text-decoration: none;
+  font-weight: 600;
+}
 
 /* Logout */
 #btnCerrar {
   background: #e74c3c;
   color: white;
   border: none;
-  padding: 10px 16px; /* aumentado para que no se corte */
+  padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  white-space: nowrap; /* evita que el texto se rompa */
+  font-size: 15px;
+  white-space: nowrap;
 }
 #btnCerrar:hover { opacity: 0.9; }
 
 /* Page title */
 #titulo-pantalla {
-  margin: 90px 20px 20px;
-  font-size: 24px; /* más grande y visible */
+  margin: 100px 20px 20px;
+  font-size: 26px;
   text-align: center;
   color: #222;
   font-weight: 700;
@@ -53,81 +67,34 @@ main {
   margin: 0 auto;
 }
 
-/* Info box */
-.info {
-  background: #fff;
-  padding: 14px;
-  border-radius: 10px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-  margin-bottom: 18px;
-}
-.info p { margin: 6px 0; }
-
-/* Search input */
-input#buscador {
-  display: block;
-  width: 60%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #d6dbe6;
-  margin-bottom: 12px;
-  font-size: 14px;
-}
-
-/* Tables */
+/* Tables (si en algún momento se usan) */
 table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.04);
-  margin-bottom: 20px;
+  margin-top: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
 }
+
 thead th {
   background: var(--celeste-claro);
   color: #fff;
-  text-align: left;
   padding: 14px;
-  font-weight: 700;
   font-size: 15px;
+  font-weight: 700;
 }
+
 tbody td {
   padding: 12px;
   border-bottom: 1px solid #f0f2f7;
   font-size: 14px;
-  word-break: break-word;
 }
 
-/* Buttons */
-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-}
-button:hover {
-  transform: translateY(-1px);
-  transition: 0.12s;
-}
-
-button.edit {
-  background: #00aaff;
-  color: white;
-}
-button.delete {
-  background: #ff6b6b;
-  color: white;
-}
-button.view {
-  background: #6c757d;
-  color: white;
-}
-
-/* ===========================
-   MODAL ACTUALIZADO
-   ===========================*/
+/* =============================
+   MODAL
+   =============================*/
 #modal-usuario.modal {
   display: none;
   position: fixed;
@@ -136,7 +103,7 @@ button.view {
   justify-content: center;
   align-items: center;
   z-index: 2000;
-  padding: 20px; /* para que no se corte en pantallas pequeñas */
+  padding: 20px;
 }
 
 #modal-usuario[aria-hidden="false"] {
@@ -148,7 +115,7 @@ button.view {
   padding: 28px 24px;
   border-radius: 12px;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
   box-shadow: 0 15px 40px rgba(0,0,0,0.15);
   position: relative;
 }
@@ -173,25 +140,27 @@ button.view {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #e0e6ef;
-  margin-top: 6px;
+  margin-bottom: 14px;
 }
 
 /* Actions del modal */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   margin-top: 18px;
 }
+
 .modal-actions button {
-  min-width: 90px;
+  min-width: 100px;
+  padding: 9px 12px;
+  font-weight: 600;
 }
 
 /* Responsive */
 @media (max-width: 800px) {
-  input#buscador { width: 100%; }
-  #titulo-pantalla { font-size: 20px; }
   .nav-links { display: none; }
-  #btnCerrar { padding: 8px 12px; font-size: 14px; }
-  .modal-content { padding: 20px 16px; max-width: 90%; }
+  #titulo-pantalla { font-size: 22px; }
+  #btnCerrar { padding: 8px 14px; font-size: 14px; }
+  .modal-content { max-width: 90%; padding: 22px 18px; }
 }

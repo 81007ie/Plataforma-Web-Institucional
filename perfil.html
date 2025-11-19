@@ -17,9 +17,11 @@
   <!-- Navbar -->
   <nav class="navbar">
     <div class="logo">Perfil</div>
+
     <ul class="nav-links">
       <li><a href="dashboard.html">Inicio</a></li>
     </ul>
+
     <button id="btnCerrar">Cerrar sesión</button>
   </nav>
 
@@ -31,28 +33,29 @@
 
   <!-- Modal editar -->
   <div id="modal-usuario" class="modal" aria-hidden="true">
-  <div class="modal-content">
-    <h3>Editar Usuario</h3>
+    <div class="modal-content">
 
-    <label>Nombre:</label>
-    <input id="nombre-input" type="text" />
+      <h2>Editar Usuario</h2>
 
-    <label>Correo:</label>
-    <input id="correo-input" type="email" />
+      <label>Nombre:</label>
+      <input id="nombre-input" type="text" />
 
-    <label>Grado:</label>
-    <input id="grado-input" type="text" />
+      <label>Correo:</label>
+      <input id="correo-input" type="email" />
 
-    <label>Nivel:</label>
-    <input id="nivel-input" type="text" />
+      <label>Grado:</label>
+      <input id="grado-input" type="text" />
 
-    <div class="modal-buttons">
-      <button id="guardar-btn">Guardar</button>
-      <button id="cancelar-btn">Cancelar</button>
+      <label>Nivel:</label>
+      <input id="nivel-input" type="text" />
+
+      <!-- ESTA ES LA CLASE CORRECTA PARA EL JS -->
+      <div class="modal-actions">
+        <button id="guardar-btn">Guardar</button>
+        <button id="cancelar-btn">Cancelar</button>
+      </div>
     </div>
   </div>
-</div>
-
 
   <!-- Script principal (módulo) -->
   <script type="module" src="js/perfil.js"></script>
