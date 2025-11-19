@@ -204,14 +204,22 @@ function mostrarUsuarios(lista) {
         <td>${escapeHtml(u.grado || "-")}</td>
         <td>${escapeHtml(u.nivel || "-")}</td>
         <td>${escapeHtml(u.rol || "-")}</td>
+
         <td>
+          ${
+            usuarioActual.rol === "Administrativo"
+              ? `
                 <button class="edit" onclick="window.__editarUsuario('${u.id}')">Editar</button>
                 <button class="delete" onclick="window.__eliminarUsuario('${u.id}')">Eliminar</button>
+              `
+              : `—`
+          }
         </td>
       </tr>
     `)
     .join("");
 }
+
 
 // ===============================
 // 🔹 FILTRAR TABLA
@@ -237,6 +245,7 @@ async function renderSubdirector() {
     <div class="info">
       <p><b>Nombre:</b> ${escapeHtml(usuarioActual.nombre)}</p>
       <p><b>Rol:</b> ${escapeHtml(usuarioActual.rol)}</p>
+      <p><b>Nivel:</b> ${escapeHtml(usuarioActual.nivel || "-")}</p>
       <p><b>Correo:</b> ${escapeHtml(usuarioActual.correo)}</p>
     </div>
 

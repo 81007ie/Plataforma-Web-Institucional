@@ -110,7 +110,7 @@ main {
 table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--celeste-claro);
   border-radius: 10px;
   overflow: hidden;
   margin-top: 12px;
