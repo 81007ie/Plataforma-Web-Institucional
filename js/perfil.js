@@ -1,5 +1,5 @@
 // ===============================
-// 🔥 MÓDULO DE USUARIOS — FINAL
+// 🔥 MÓDULO DE USUARIOS — FINAL + PAGINACIÓN
 // ===============================
 
 import { auth, db } from "./firebaseconfig.js";
@@ -16,6 +16,8 @@ import {
   query,
   orderBy,
   limit,
+  startAfter,
+  startAt,
   updateDoc,
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
@@ -31,6 +33,12 @@ const cancelarBtn = document.getElementById("cancelar-btn");
 
 let usuarioActual = null;
 let listaUsuarios = [];
+
+let pagina = 1;
+const tamanioPagina = 10;
+
+let lastVisible = null;
+let firstVisible = null;
 
 // ===============================
 // 🔹 AUTENTICACIÓN
@@ -88,7 +96,7 @@ async function renderAdmin() {
     </div>
 
     <h2>Usuarios</h2>
-    <input id="buscador" placeholder="Buscar por nombre, grado, nivel o rol..." class="input"/>
+    <input id="buscador" placeholder="Buscar..." class="input"/>
 
     <table>
       <thead>
@@ -99,6 +107,12 @@ async function renderAdmin() {
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
+    <div class="paginacion">
+      <button id="btn-prev" disabled>Anterior</button>
+      <span id="pagina-texto">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
+
     <h2>Comunicados Recientes</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
@@ -108,11 +122,66 @@ async function renderAdmin() {
 
   document.getElementById("buscador")?.addEventListener("input", filtrarTabla);
 
-  const snap = await getDocs(collection(db, "usuarios"));
+  await cargarPagina(); // 👈 Primera carga con paginación
+  await cargarComunicados();
+
+  document.getElementById("btn-prev").addEventListener("click", paginaAnterior);
+  document.getElementById("btn-next").addEventListener("click", paginaSiguiente);
+}
+
+// ===============================
+// 🔹 PAGINACIÓN — CARGAR PÁGINA
+// ===============================
+async function cargarPagina(next = false, prev = false) {
+  let q;
+
+  if (prev && firstVisible) {
+    q = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      startAt(firstVisible),
+      limit(tamanioPagina)
+    );
+  } else if (next && lastVisible) {
+    q = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      startAfter(lastVisible),
+      limit(tamanioPagina)
+    );
+  } else {
+    q = query(
+      collection(db, "usuarios"),
+      orderBy("nombre"),
+      limit(tamanioPagina)
+    );
+  }
+
+  const snap = await getDocs(q);
+
+  if (snap.empty) return;
+
   listaUsuarios = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+  firstVisible = snap.docs[0];
+  lastVisible  = snap.docs[snap.docs.length - 1];
+
   mostrarUsuarios(listaUsuarios);
-  await cargarComunicados();
+
+  document.getElementById("pagina-texto").textContent = `Página ${pagina}`;
+  document.getElementById("btn-prev").disabled = pagina === 1;
+}
+
+async function paginaSiguiente() {
+  pagina++;
+  await cargarPagina(true, false);
+}
+
+async function paginaAnterior() {
+  if (pagina > 1) {
+    pagina--;
+    await cargarPagina(false, true);
+  }
 }
 
 // ===============================
@@ -136,14 +205,8 @@ function mostrarUsuarios(lista) {
         <td>${escapeHtml(u.nivel || "-")}</td>
         <td>${escapeHtml(u.rol || "-")}</td>
         <td>
-          ${
-            usuarioActual.rol === "Administrativo"
-              ? `
                 <button class="edit" onclick="window.__editarUsuario('${u.id}')">Editar</button>
                 <button class="delete" onclick="window.__eliminarUsuario('${u.id}')">Eliminar</button>
-              `
-              : ""
-          }
         </td>
       </tr>
     `)
@@ -151,7 +214,7 @@ function mostrarUsuarios(lista) {
 }
 
 // ===============================
-// 🔹 FILTRAR TABLA (AGREGA GRADO)
+// 🔹 FILTRAR TABLA
 // ===============================
 function filtrarTabla(e) {
   const term = e.target.value.toLowerCase();
@@ -167,7 +230,7 @@ function filtrarTabla(e) {
 }
 
 // ===============================
-// 🟣 RENDER SUBDIRECTOR
+// 🟣 RENDER SUBDIRECTOR (CON PAGINACIÓN)
 // ===============================
 async function renderSubdirector() {
   contenido.innerHTML = `
@@ -178,7 +241,7 @@ async function renderSubdirector() {
     </div>
 
     <h2>Usuarios</h2>
-    <input id="buscador-sub" placeholder="Buscar por nombre, grado, nivel o rol..." class="input"/>
+    <input id="buscador-sub" placeholder="Buscar..." class="input"/>
 
     <table>
       <thead>
@@ -187,6 +250,12 @@ async function renderSubdirector() {
       <tbody id="tabla-usuarios"></tbody>
     </table>
 
+    <div class="paginacion">
+      <button id="btn-prev" disabled>Anterior</button>
+      <span id="pagina-texto">Página 1</span>
+      <button id="btn-next">Siguiente</button>
+    </div>
+
     <h2>Comunicados Recientes</h2>
     <table>
       <thead><tr><th>Título</th><th>Descripción</th><th>Fecha</th></tr></thead>
@@ -194,25 +263,13 @@ async function renderSubdirector() {
     </table>
   `;
 
-  const snap = await getDocs(collection(db, "usuarios"));
-  const todos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  document.getElementById("buscador-sub")?.addEventListener("input", filtrarTabla);
 
-  const sinAdmins = todos.filter(u => (u.rol || "").toLowerCase() !== "administrativo");
-
-  mostrarUsuarios(sinAdmins);
-
-  document.getElementById("buscador-sub")?.addEventListener("input", e => {
-    const term = e.target.value.toLowerCase();
-    const filtrados = sinAdmins.filter(u =>
-      (u.nombre || "").toLowerCase().includes(term) ||
-      (u.grado || "").toLowerCase().includes(term) ||
-      (u.nivel || "").toLowerCase().includes(term) ||
-      (u.rol || "").toLowerCase().includes(term)
-    );
-    mostrarUsuarios(filtrados);
-  });
-
+  await cargarPagina();
   await cargarComunicados();
+
+  document.getElementById("btn-prev").addEventListener("click", paginaAnterior);
+  document.getElementById("btn-next").addEventListener("click", paginaSiguiente);
 }
 
 // ===============================

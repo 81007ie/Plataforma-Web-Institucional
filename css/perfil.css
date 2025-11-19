@@ -1,3 +1,6 @@
+/* =============================
+   ESTILOS GENERALES
+   ============================= */
 body {
   margin: 0;
   font-family: var(--font-family);
@@ -7,7 +10,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Navbar */
+/* =============================
+   NAVBAR
+   ============================= */
 .navbar {
   position: fixed;
   top: 0;
@@ -20,7 +25,11 @@ body {
   padding: 14px 22px;
   z-index: 1000;
 }
-.navbar .logo { font-size: 20px; font-weight: 700; }
+
+.navbar .logo {
+  font-size: 20px;
+  font-weight: 700;
+}
 
 .nav-links {
   list-style: none;
@@ -49,9 +58,13 @@ body {
   font-size: 15px;
   white-space: nowrap;
 }
-#btnCerrar:hover { opacity: 0.9; }
+#btnCerrar:hover {
+  opacity: 0.9;
+}
 
-/* Page title */
+/* =============================
+   TITULO DE PANTALLA
+   ============================= */
 #titulo-pantalla {
   margin: 100px 20px 20px;
   font-size: 26px;
@@ -60,21 +73,47 @@ body {
   font-weight: 700;
 }
 
-/* Main container */
+/* =============================
+   CONTENEDOR PRINCIPAL
+   ============================= */
 main {
   padding: 18px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
-/* Tables (si en algún momento se usan) */
+/* =============================
+   BUSCADORES (ADMIN Y SUBDIRECTOR)
+   ============================= */
+.input,
+#buscador,
+#buscador-sub {
+  width: 100%;
+  max-width: 350px;
+  padding: 10px 14px;
+  border: 1px solid #d6d6d6;
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  margin-top: 10px;
+  font-size: 14px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+}
+
+#buscador-sub {
+  margin-bottom: 10px;
+}
+
+/* =============================
+   TABLAS
+   ============================= */
 table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 10px;
+  margin-top: 12px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.05);
 }
 
@@ -93,8 +132,70 @@ tbody td {
 }
 
 /* =============================
-   MODAL
-   =============================*/
+   BOTONES DE ACCIÓN (EDITAR / ELIMINAR)
+   ============================= */
+button.edit,
+button.delete {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: 0.2s ease;
+}
+
+button.edit {
+  background: #3498db;
+  color: white;
+}
+
+button.edit:hover {
+  background: #2d7fbd;
+}
+
+button.delete {
+  background: #e74c3c;
+  color: white;
+}
+
+button.delete:hover {
+  background: #c0392b;
+}
+
+/* =============================
+   PAGINACIÓN
+   ============================= */
+.paginacion {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.paginacion button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--celeste);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.paginacion button:disabled {
+  background: #b9d7ec;
+  cursor: not-allowed;
+}
+
+#pagina-texto {
+  font-weight: 700;
+}
+
+/* =============================
+   MODAL DE EDICIÓN
+   ============================= */
 #modal-usuario.modal {
   display: none;
   position: fixed;
@@ -143,7 +244,7 @@ tbody td {
   margin-bottom: 14px;
 }
 
-/* Actions del modal */
+/* Botones del modal */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -157,7 +258,9 @@ tbody td {
   font-weight: 600;
 }
 
-/* Responsive */
+/* =============================
+   RESPONSIVE
+   ============================= */
 @media (max-width: 800px) {
   .nav-links { display: none; }
   #titulo-pantalla { font-size: 22px; }
