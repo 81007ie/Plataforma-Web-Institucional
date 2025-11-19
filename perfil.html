@@ -6,15 +6,19 @@
   <title>Perfil</title>
   <link rel="icon" type="image/png" href="img/logo.png">
 
-  <!-- Tus estilos -->
+  <!-- Estilos globales -->
   <link rel="stylesheet" href="css/colors.css">
   <link rel="stylesheet" href="css/perfil.css">
 
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
-  <!-- Navbar -->
+
+  <!-- ==============================
+       NAVBAR
+  =============================== -->
   <nav class="navbar">
     <div class="logo">Perfil</div>
 
@@ -25,13 +29,17 @@
     <button id="btnCerrar">Cerrar sesión</button>
   </nav>
 
-  <!-- Contenido principal -->
+  <!-- ==============================
+       CONTENIDO
+  =============================== -->
   <main>
     <h1 id="titulo-pantalla"></h1>
     <div id="contenido"></div>
   </main>
 
-  <!-- Modal editar -->
+  <!-- ==============================
+       MODAL EDITAR USUARIO
+  =============================== -->
   <div id="modal-usuario" class="modal" aria-hidden="true">
     <div class="modal-content">
 
@@ -49,15 +57,19 @@
       <label>Nivel:</label>
       <input id="nivel-input" type="text" />
 
-      <!-- ESTA ES LA CLASE CORRECTA PARA EL JS -->
+      <!-- Botones correctos según tu JS -->
       <div class="modal-actions">
-        <button id="guardar-btn">Guardar</button>
-        <button id="cancelar-btn">Cancelar</button>
+        <button id="cancelar-btn" class="delete">Cancelar</button>
+        <button id="guardar-btn" class="edit">Guardar</button>
       </div>
+
     </div>
   </div>
 
-  <!-- Script principal (módulo) -->
+  <!-- ==============================
+       SCRIPT PRINCIPAL
+  =============================== -->
   <script type="module" src="js/perfil.js"></script>
+
 </body>
 </html>
