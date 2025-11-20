@@ -149,107 +149,116 @@ async function cargarUsuariosYComunicados() {
   }
 }
 
-// ---------- RENDER PÁGINA ----------
 function renderPagina(page) {
-  totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
-  if (page < 1) page = 1;
-  if (page > totalPaginas) page = totalPaginas;
-  paginaActual = page;
+    totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
+    if (page < 1) page = 1;
+    if (page > totalPaginas) page = totalPaginas;
+    paginaActual = page;
 
-  const start = (page - 1) * POR_PAGINA;
-  const end = start + POR_PAGINA;
-  const pageItems = usuariosFiltrados.slice(start, end);
+    const start = (page - 1) * POR_PAGINA;
+    const end = start + POR_PAGINA;
+    const pageItems = usuariosFiltrados.slice(start, end);
 
-  if (tablaBody) tablaBody.innerHTML = "";
+    if (tablaBody) tablaBody.innerHTML = "";
 
-  if (!usuarioActual || !["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
-    return;
-  }
+    if (!usuarioActual || !["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
+        return;
+    }
 
-  if (pageItems.length === 0) {
-    if (tablaBody) tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px;">No hay usuarios</td></tr>`;
-  } else {
-    for (const u of pageItems) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(u.nombre || "-")}</td>
-        <td>${escapeHtml(u.correo || "-")}</td>
-        <td>${escapeHtml(u.rol || "-")}</td>
-        <td>${escapeHtml(u.grado || "-")}</td>
-        <td>${escapeHtml(u.nivel || "-")}</td>
-        <td style="text-align:center;">
-          ${
-            usuarioActual.rol === "Administrativo"
-              ? `<button class="edit" data-id="${u.id}">Editar</button>
-                 <button class="delete" data-id="${u.id}">Eliminar</button>`
-              : `<button class="ver" data-id="${u.id}">Ver</button>`
-          }
-        </td>
-      `;
-      if (tablaBody) tablaBody.appendChild(tr);
-    }
-  }
+    if (pageItems.length === 0) {
+        if (tablaBody) tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px;">No hay usuarios</td></tr>`;
+    } else {
+        for (const u of pageItems) {
+            const tr = document.createElement("tr");
 
-  renderChips();
+            // Generamos botones dentro de un contenedor .btn-group
+            let botonesHTML = '';
+            if (usuarioActual.rol === "Administrativo") {
+                botonesHTML = `
+                    <div class="btn-group">
+                        <button class="edit" data-id="${u.id}">Editar</button>
+                        <button class="delete" data-id="${u.id}">Eliminar</button>
+                    </div>
+                `;
+            } else {
+                botonesHTML = `
+                    <div class="btn-group">
+                        <button class="ver" data-id="${u.id}">Ver</button>
+                    </div>
+                `;
+            }
 
-  if (btnPrev) btnPrev.disabled = paginaActual <= 1;
-  if (btnNext) btnNext.disabled = paginaActual >= totalPaginas;
+            tr.innerHTML = `
+                <td>${escapeHtml(u.nombre || "-")}</td>
+                <td>${escapeHtml(u.correo || "-")}</td>
+                <td>${escapeHtml(u.rol || "-")}</td>
+                <td>${escapeHtml(u.grado || "-")}</td>
+                <td>${escapeHtml(u.nivel || "-")}</td>
+                <td style="text-align:center;">${botonesHTML}</td>
+            `;
 
-  tablaBody?.querySelectorAll(".edit").forEach(btn => {
-    btn.onclick = async (e) => {
-      const id = e.currentTarget.dataset.id;
-      const u = usuariosTodos.find(x => x.id === id) || {};
-      openEditModal(id, u);
-    };
-  });
+            tablaBody.appendChild(tr);
+        }
+    }
 
-  tablaBody?.querySelectorAll(".delete").forEach(btn => {
-    btn.onclick = async (e) => {
-      const id = e.currentTarget.dataset.id;
-      const u = usuariosTodos.find(x => x.id === id);
-      const res = await Swal.fire({
-        title: `Eliminar ${u?.nombre || "usuario"}?`,
-        text: "Esta acción es irreversible.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Eliminar"
-      });
-      if (!res.isConfirmed) return;
+    renderChips();
+    if (btnPrev) btnPrev.disabled = paginaActual <= 1;
+    if (btnNext) btnNext.disabled = paginaActual >= totalPaginas;
 
-      try {
-        await deleteDoc(doc(db, "usuarios", id));
+    // Event listeners para los botones
+    tablaBody.querySelectorAll(".edit").forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.currentTarget.dataset.id;
+            const u = usuariosTodos.find(x => x.id === id) || {};
+            openEditModal(id, u);
+        };
+    });
 
-        usuariosTodos = usuariosTodos.filter(x => x.id !== id);
-        usuariosFiltrados = usuariosFiltrados.filter(x => x.id !== id);
+    tablaBody.querySelectorAll(".delete").forEach(btn => {
+        btn.onclick = async (e) => {
+            const id = e.currentTarget.dataset.id;
+            const u = usuariosTodos.find(x => x.id === id);
+            const res = await Swal.fire({
+                title: `Eliminar ${u?.nombre || "usuario"}?`,
+                text: "Esta acción es irreversible.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Eliminar"
+            });
+            if (!res.isConfirmed) return;
 
-        totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
-        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+            try {
+                await deleteDoc(doc(db, "usuarios", id));
+                usuariosTodos = usuariosTodos.filter(x => x.id !== id);
+                usuariosFiltrados = usuariosFiltrados.filter(x => x.id !== id);
+                totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
+                if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+                renderPagina(paginaActual);
+                Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
+            } catch (err) {
+                console.error(err);
+                Swal.fire("Error", "No se pudo eliminar.", "error");
+            }
+        };
+    });
 
-        renderPagina(paginaActual);
-        Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
-      } catch (err) {
-        console.error(err);
-        Swal.fire("Error", "No se pudo eliminar.", "error");
-      }
-    };
-  });
-
-  tablaBody?.querySelectorAll(".ver").forEach(btn => {
-    btn.onclick = (e) => {
-      const id = e.currentTarget.dataset.id;
-      const u = usuariosTodos.find(x => x.id === id) || {};
-      Swal.fire({
-        title: escapeHtml(u.nombre || "Usuario"),
-        html: `
-          <b>Correo:</b> ${escapeHtml(u.correo || "-")}<br/>
-          <b>Rol:</b> ${escapeHtml(u.rol || "-")}<br/>
-          <b>Grado:</b> ${escapeHtml(u.grado || "-")}<br/>
-          <b>Nivel:</b> ${escapeHtml(u.nivel || "-")}
-        `
-      });
-    };
-  });
+    tablaBody.querySelectorAll(".ver").forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.currentTarget.dataset.id;
+            const u = usuariosTodos.find(x => x.id === id) || {};
+            Swal.fire({
+                title: escapeHtml(u.nombre || "Usuario"),
+                html: `
+                    <b>Correo:</b> ${escapeHtml(u.correo || "-")}<br/>
+                    <b>Rol:</b> ${escapeHtml(u.rol || "-")}<br/>
+                    <b>Grado:</b> ${escapeHtml(u.grado || "-")}<br/>
+                    <b>Nivel:</b> ${escapeHtml(u.nivel || "-")}
+                `
+            });
+        };
+    });
 }
+
 
 // ---------- MODAL ----------
 function openEditModal(id, u) {

@@ -138,9 +138,6 @@ main {
     box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
 }
 
-/* ==============================
-   TABLA
-   ============================== */
 .tabla-wrap {
     overflow-x: auto;
     background: var(--blanco);
@@ -159,20 +156,24 @@ thead {
 }
 
 th, td {
-    padding: 12px 15px;
+    padding: 15px;
     text-align: left;
+    box-sizing: border-box;
 }
 
-th:last-child,
-td:last-child {
+/* Última columna: ancho fijo */
+th.col-accion {
     width: 120px;
     min-width: 120px;
+    text-align: center;
+}
+
+/* Solo en los td de botones usamos flex */
+td.col-accion .btn-group {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 5px;
-    padding-top: 5px;
-    padding-bottom: 5px;
 }
 
 tbody tr {
@@ -204,7 +205,6 @@ td button:hover {
     transform: translateY(-1px);
 }
 
-/* Botones específicos */
 .edit {
     background: var(--azul-borde);
     color: var(--blanco);
@@ -219,6 +219,15 @@ td button:hover {
     background: var(--gris);
     color: var(--blanco);
 }
+
+/* Contenedor de botones en la columna de acción */
+.btn-group {
+    display: flex;
+    flex-direction: column; /* vertical */
+    align-items: center;
+    gap: 5px;
+}
+
 
 /* ==============================
    PAGINACIÓN
