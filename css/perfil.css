@@ -1,409 +1,453 @@
-/* ===============================
-   📌 RESET BÁSICO
-=============================== */
 body {
-  margin: 0;
-  padding: 0;
-  background: #f5f6fa;
-  font-family: var(--font-family);
-  color: var(--negro);
+    margin: 0;
+    padding: 0;
+    background: #f5f6fa;
+    font-family: var(--font-family);
+    color: var(--negro);
 }
 
-/* ===============================
-   📌 NAVBAR
-=============================== */
+h1, h2, h3 {
+    color: var(--azul-oscuro); /* Usar azul oscuro para títulos */
+}
+
+/* NAVBAR */
 .navbar {
-  width: 100%;
-  background: var(--celeste);
-  color: var(--blanco);
-  padding: var(--spacing-md);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  z-index: 1000;
-  flex-wrap: wrap;
+    width: 100%;
+    background: var(--celeste);
+    color: var(--blanco);
+    padding: var(--spacing-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    flex-wrap: wrap;
 }
 
 .navbar .logo {
-  font-size: 20px;
-  font-weight: bold;
+    font-size: 20px;
+    font-weight: bold;
 }
 
 .nav-links {
-  list-style: none;
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .nav-links a {
-  text-decoration: none;
-  color: var(--blanco);
-  font-weight: 500;
+    text-decoration: none;
+    color: var(--blanco);
+    font-weight: 500;
+    transition: opacity 0.2s;
 }
 
 .nav-links a:hover {
-  color: var(--blanco);
-  opacity: 0.8;
+    opacity: 0.8;
 }
 
 #btnCerrar {
-  background: var(--rojo);
-  border: none;
-  color: var(--blanco);
-  padding: 8px 14px;
-  cursor: pointer;
-  border-radius: 6px;
-  font-size: 14px;
-  flex-shrink: 0;
-  white-space: nowrap;
+    background: var(--rojo);
+    border: none;
+    color: var(--blanco);
+    padding: 8px 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: background 0.2s;
 }
 
 #btnCerrar:hover {
-  background: #c62828;
+    background: #c62828;
 }
 
-/* ===============================
-   📌 CONTENEDORES GENERALES
-=============================== */
+/* CONTENEDORES GENERALES */
 main {
-  padding: 120px 20px 40px;
-  max-width: 1100px;
-  margin: auto;
+    padding: 120px 20px 40px;
+    max-width: 1100px;
+    margin: auto;
 }
 
-/* ===============================
-   📌 INFORMACIÓN DEL USUARIO
-=============================== */
+/* INFORMACIÓN DEL USUARIO (Tarjeta de perfil) */
 .usuario-info-box {
-  background: var(--blanco);
-  border-left: 4px solid var(--azul-borde);
-  padding: var(--spacing-md);
-  border-radius: 8px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-  margin-bottom: 25px;
+    background: var(--blanco);
+    border-left: 5px solid var(--azul-borde);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+    line-height: 1.6;
 }
 
-/* ===============================
-   📌 SECCIÓN USUARIOS
-=============================== */
+.usuario-info-box p {
+    margin: 5px 0;
+}
+
+
+/* SECCIÓN USUARIOS */
 #seccion-usuarios {
-  display: block; /* Ocultar vía JS para roles no permitidos */
+    display: block;
+    margin-top: 30px;
 }
 
-/* ===============================
-   📌 BUSCADOR
-=============================== */
+/* BUSCADOR */
 .acciones {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 #buscador {
-  width: 100%;
-  max-width: 350px;
-  padding: var(--spacing-sm);
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  outline: none;
+    width: 100%;
+    max-width: 350px;
+    padding: var(--spacing-sm);
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 #buscador:focus {
-  border-color: var(--azul-borde);
+    border-color: var(--azul-borde);
+    box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.2);
 }
 
-/* ===============================
-   📌 TABLA
-=============================== */
+/* TABLA */
 .tabla-wrap {
-  overflow-x: auto;
-  background: var(--blanco);
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    overflow-x: auto;
+    background: var(--blanco);
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 thead {
-  background: var(--azul-borde);
-  color: var(--blanco);
+    background: var(--azul-oscuro);
+    color: var(--blanco);
 }
 
 th, td {
-  padding: 12px;
-  text-align: left;
+    padding: 12px 15px;
+    text-align: left;
+}
+
+/* Líneas sutiles entre filas */
+tbody tr {
+    border-bottom: 1px solid #eee;
 }
 
 tbody tr:nth-child(even) {
-  background: #f2f2f2;
+    background: #f9f9f9;
 }
 
 tbody tr:hover {
-  background: #e8f5ff;
+    background: #e0f2ff;
 }
 
-/* ===============================
-   📌 BOTONES DE ACCIÓN
-=============================== */
-.btn-accion {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  color: var(--blanco);
-  font-size: 13px;
+/* Mejorar visualmente los botones dentro de las celdas de acción */
+td button {
+    margin: 3px 5px;
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
 }
 
-.btn-ver {
-  background: var(--celeste);
+td button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-.btn-editar {
-  background: var(--azul-borde);
+/* Clases específicas para los botones de la tabla (usadas en JS) */
+.edit {
+    background: var(--azul-borde);
+    color: var(--blanco);
 }
 
-.btn-eliminar {
-  background: var(--rojo);
+.delete {
+    background: var(--rojo);
+    color: var(--blanco);
 }
 
-/* ===============================
-   📌 PAGINACIÓN
-=============================== */
+.ver { /* Para Subdirector */
+    background: var(--gris);
+    color: var(--blanco);
+}
+
+/* PAGINACIÓN */
 .paginacion {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  margin-top: 20px;
-  flex-wrap: wrap;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 25px;
+    flex-wrap: wrap;
 }
 
 .nav-btn {
-  padding: 8px 14px;
-  border: none;
-  background: var(--azul-borde);
-  color: var(--blanco);
-  border-radius: 6px;
-  cursor: pointer;
+    padding: 8px 16px;
+    border: none;
+    background: var(--azul-oscuro);
+    color: var(--blanco);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #142a54;
 }
 
 .nav-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+    opacity: 0.4;
+    cursor: default;
 }
 
 .chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .chip {
-  padding: 6px 12px;
-  background: #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
+    padding: 6px 12px;
+    background: #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--gris);
+    transition: background 0.2s, color 0.2s;
 }
 
 .chip.active {
-  background: var(--azul-borde);
-  color: var(--blanco);
+    background: var(--azul-borde);
+    color: var(--blanco);
 }
 
-/* ===============================
-   📌 COMUNICADOS
-=============================== */
+.chip:hover:not(.active) {
+    background: #ccc;
+}
+
+/* COMUNICADOS */
 .comunicados {
-  margin-top: 40px;
-  padding: var(--spacing-md);
-  background: var(--blanco);
-  border-radius: 8px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    margin-top: 40px;
+    padding: var(--spacing-md);
+    background: var(--blanco);
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
 .comunicado-item {
-  background: #f9f9f9;
-  padding: var(--spacing-sm);
-  border-left: 3px solid var(--azul-borde);
-  margin-bottom: 12px;
-  border-radius: 6px;
+    background: #fcfcfc;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-left: 3px solid var(--celeste);
+    margin-bottom: 12px;
+    border-radius: 6px;
 }
 
-/* ===============================
-   📌 MODAL
-=============================== */
+/* Mejorar la visibilidad de la fecha */
+.comunicado-item small {
+    display: block;
+    margin-top: 5px;
+    color: var(--gris);
+    font-size: 0.85em;
+}
+
+/* MODAL */
 .modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
 }
 
 .modal.show {
-  display: flex;
+    display: flex;
 }
 
 .modal-content {
-  background: var(--blanco);
-  width: 95%;
-  max-width: 420px;
-  padding: var(--spacing-md);
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    background: var(--blanco);
+    width: 95%;
+    max-width: 420px;
+    padding: var(--spacing-lg);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
 .modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
 }
 
 .modal-content label {
-  display: block;
-  margin-top: 10px;
-  font-weight: 500;
+    display: block;
+    margin-top: 10px;
+    font-weight: 600;
 }
 
 .modal-content input,
 .modal-content select {
-  width: 100%;
-  padding: var(--spacing-sm);
-  margin-top: 5px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  outline: none;
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
 }
 
 .modal-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+.btn-primario, .btn-sec {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .btn-primario {
-  background: var(--azul-borde);
-  color: var(--blanco);
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+    background: var(--azul-borde);
+    color: var(--blanco);
+}
+.btn-primario:hover {
+    background: #008fbf;
 }
 
 .btn-sec {
-  background: #ddd;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+    background: #e0e0e0;
+    color: var(--negro);
+}
+.btn-sec:hover {
+    background: #ccc;
 }
 
-/* ===============================
-   📱 RESPONSIVE — TABLET (≤992px)
-=============================== */
+
+/* RESPONSIVE — TABLET (≤992px) */
 @media (max-width: 992px) {
-  .nav-links {
-    gap: 12px;
-  }
+    .nav-links {
+        gap: 12px;
+    }
 
-  #buscador {
-    max-width: 100%;
-  }
+    #buscador {
+        max-width: 100%;
+    }
 
-  th, td {
-    padding: 10px;
-  }
+    th, td {
+        padding: 10px;
+    }
 }
 
-/* ===============================
-   📱 RESPONSIVE — CELULAR (≤768px)
-=============================== */
+/* RESPONSIVE — CELULAR (≤768px) */
 @media (max-width: 768px) {
-  .navbar {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+    .navbar {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-  .nav-links {
-    width: 100%;
-    justify-content: center;
-    padding-bottom: 5px;
-  }
+    .nav-links {
+        width: 100%;
+        justify-content: center;
+        padding-bottom: 5px;
+    }
 
-  #btnCerrar {
-    width: 100%;
-    margin-top: 5px;
-    white-space: normal;
-    text-align: center;
-  }
+    .nav-actions {
+        width: 100%;
+    }
 
-  main {
-    padding: 160px 15px 40px;
-  }
+    #btnCerrar {
+        width: 100%;
+        margin-top: 5px;
+        white-space: normal;
+        text-align: center;
+    }
 
-  /* --- Información del usuario tipo tarjeta --- */
-  .usuario-info-box {
-    font-size: 14px;
-  }
+    main {
+        padding: 160px 15px 40px;
+    }
 
-  /* --- Tabla se convierte en tarjetas --- */
-  table,
-  thead {
-    display: none;
-  }
+    /* Información del usuario tipo tarjeta */
+    .usuario-info-box {
+        font-size: 14px;
+    }
 
-  #tabla-usuarios {
-    display: grid;
-    gap: 12px;
-  }
+    /* Tabla se convierte en tarjetas */
+    table,
+    thead {
+        display: none;
+    }
 
-  #tabla-usuarios tr {
-    display: block;
-    background: var(--blanco);
-    padding: 12px;
-    border-radius: 8px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-  }
+    #tabla-usuarios {
+        display: grid;
+        gap: 15px;
+    }
 
-  #tabla-usuarios td {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px 0;
-    border-bottom: 1px solid #eee;
-  }
+    #tabla-usuarios tr {
+        display: block;
+        background: var(--blanco);
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border: none;
+    }
 
-  #tabla-usuarios td:last-child {
-    border-bottom: none;
-  }
+    #tabla-usuarios td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+    }
 
-  .btn-accion {
-    width: 100%;
-    margin-top: 5px;
-  }
+    #tabla-usuarios td:last-child {
+        border-bottom: none;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        margin-top: 10px;
+    }
 
-  .chips {
-    justify-content: center;
-  }
+    td button {
+        margin: 5px 0 !important;
+        width: 100%;
+        text-align: center;
+        padding: 8px 10px !important;
+    }
 
-  .chip {
-    padding: 8px 14px;
-  }
+    .chips {
+        justify-content: center;
+    }
 
-  .modal-content {
-    max-width: 350px;
-  }
+    .chip {
+        padding: 8px 14px;
+    }
+
+    .modal-content {
+        max-width: 350px;
+    }
 }
