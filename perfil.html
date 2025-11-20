@@ -19,12 +19,9 @@
 
     <ul class="nav-links">
       <li><a href="dashboard.html">Inicio</a></li>
-      <!--<li><a href="recursos.html">Recursos</a></li>-->
-      <!--<li><a href="biblioteca.html">Biblioteca</a></li>-->
     </ul>
 
     <div class="nav-actions">
-      <span id="rol-usuario" class="rol-usuario"></span>
       <button id="btnCerrar" class="btn-logout">Cerrar sesión</button>
     </div>
   </nav>
@@ -41,35 +38,38 @@
       <p id="info-nivel-line"><b>Nivel:</b> <span id="info-nivel">-</span></p>
     </div>
 
-    <!-- 🔹 Acciones -->
-    <div class="acciones">
-      <input id="buscador" placeholder="Buscar por nombre, rol, grado o nivel..." />
-      <!-- Botón visible solo para Administrativos -->
-      <!--<button id="nuevo-usuario-btn" class="btn-primario" style="display:none">+ Nuevo usuario</button> -->
-    </div>
+    <!-- 🔹 Sección usuarios (solo Admin/Subdirector pueden verla) -->
+    <div id="seccion-usuarios">
+      <!-- 🔹 Acciones -->
+      <div class="acciones">
+        <input id="buscador" placeholder="Buscar por nombre, rol, grado o nivel..." />
+        <!-- Botón visible solo para Administrativos -->
+        <!--<button id="nuevo-usuario-btn" class="btn-primario" style="display:none">+ Nuevo usuario</button> -->
+      </div>
 
-    <!-- 🔹 Tabla -->
-    <div class="tabla-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="col-nombre">Nombre</th>
-            <th class="col-correo">Correo</th>
-            <th class="col-rol">Rol</th>
-            <th class="col-grado">Grado</th>
-            <th class="col-nivel">Nivel</th>
-            <th class="col-accion">Acción</th>
-          </tr>
-        </thead>
-        <tbody id="tabla-usuarios"></tbody>
-      </table>
-    </div>
+      <!-- 🔹 Tabla -->
+      <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-nombre">Nombre</th>
+              <th class="col-correo">Correo</th>
+              <th class="col-rol">Rol</th>
+              <th class="col-grado">Grado</th>
+              <th class="col-nivel">Nivel</th>
+              <th class="col-accion">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-usuarios"></tbody>
+        </table>
+      </div>
 
-    <!-- 🔹 Paginación -->
-    <div class="paginacion">
-      <button id="btn-prev" class="nav-btn">Anterior</button>
-      <div id="paginacion-chips" class="chips"></div>
-      <button id="btn-next" class="nav-btn">Siguiente</button>
+      <!-- 🔹 Paginación -->
+      <div class="paginacion">
+        <button id="btn-prev" class="nav-btn">Anterior</button>
+        <div id="paginacion-chips" class="chips"></div>
+        <button id="btn-next" class="nav-btn">Siguiente</button>
+      </div>
     </div>
 
     <!-- 🔹 Comunicados -->

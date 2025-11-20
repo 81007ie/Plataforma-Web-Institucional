@@ -24,6 +24,7 @@ body {
   top: 0;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   z-index: 1000;
+  flex-wrap: wrap;
 }
 
 .navbar .logo {
@@ -35,6 +36,7 @@ body {
   list-style: none;
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
 .nav-links a {
@@ -44,7 +46,8 @@ body {
 }
 
 .nav-links a:hover {
-  color: var(--celeste);
+  color: var(--blanco);
+  opacity: 0.8;
 }
 
 #btnCerrar {
@@ -55,6 +58,8 @@ body {
   cursor: pointer;
   border-radius: 6px;
   font-size: 14px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 #btnCerrar:hover {
@@ -80,6 +85,13 @@ main {
   border-radius: 8px;
   box-shadow: 0 3px 6px rgba(0,0,0,0.1);
   margin-bottom: 25px;
+}
+
+/* ===============================
+   📌 SECCIÓN USUARIOS
+=============================== */
+#seccion-usuarios {
+  display: block; /* Ocultar vía JS para roles no permitidos */
 }
 
 /* ===============================
@@ -195,6 +207,7 @@ tbody tr:hover {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .chip {
@@ -319,8 +332,6 @@ tbody tr:hover {
 /* ===============================
    📱 RESPONSIVE — CELULAR (≤768px)
 =============================== */
-
-/* --- Navbar versión móvil --- */
 @media (max-width: 768px) {
   .navbar {
     flex-wrap: wrap;
@@ -335,7 +346,9 @@ tbody tr:hover {
 
   #btnCerrar {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 5px;
+    white-space: normal;
+    text-align: center;
   }
 
   main {
@@ -377,13 +390,11 @@ tbody tr:hover {
     border-bottom: none;
   }
 
-  /* --- Botones más grandes --- */
   .btn-accion {
     width: 100%;
     margin-top: 5px;
   }
 
-  /* --- Chips centrados y grandes --- */
   .chips {
     justify-content: center;
   }
@@ -392,7 +403,6 @@ tbody tr:hover {
     padding: 8px 14px;
   }
 
-  /* --- Modal más compacto --- */
   .modal-content {
     max-width: 350px;
   }

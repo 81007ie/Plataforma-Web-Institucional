@@ -28,6 +28,7 @@ const btnCerrar = document.getElementById("btnCerrar");
 const buscador = document.getElementById("buscador");
 
 const tablaBody = document.getElementById("tabla-usuarios");
+const tablaSection = document.getElementById("seccion-usuarios"); // <---- AGREGADO
 const btnPrev = document.getElementById("btn-prev");
 const btnNext = document.getElementById("btn-next");
 const chipsContainer = document.getElementById("paginacion-chips");
@@ -47,44 +48,21 @@ const cancelarBtn = document.getElementById("cancelar-btn");
 
 // ---------- Estado ----------
 let usuarioActual = null;
-let usuariosTodos = [];      // todos los usuarios traídos desde Firestore
-let usuariosFiltrados = [];  // resultado tras búsqueda / filtro (lo que paginamos)
+let usuariosTodos = [];
+let usuariosFiltrados = [];
 let paginaActual = 1;
 const POR_PAGINA = 5;
 let totalPaginas = 1;
 
-// ---------- Roles exactos ----------
+// ---------- Roles ----------
 const ROLES = ["Administrativo", "Subdirector", "Profesor", "Auxiliar", "Toe"];
 
-// ---------- Helpers ----------
 function escapeHtml(s) {
   if (!s) return "";
   return String(s).replace(/[&<>"'/]/g, (ch) => {
-    const map = { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;","/":"&#x2F;" };
+    const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "/": "&#x2F;" };
     return map[ch];
   });
-}
-
-function openEditModal(id, data) {
-  // Open modal only for Admin (callers should ensure this)
-  modal.setAttribute("aria-hidden", "false");
-  modal.dataset.userid = id || "";
-
-  modalTitle.textContent = "Editar Usuario";
-
-  nombreInput.value = data.nombre || "";
-  correoInput.value = data.correo || "";
-  rolInput.value = data.rol || ROLES[2];
-  gradoInput.value = data.grado || "";
-  nivelInput.value = data.nivel || "";
-
-  // correo readonly to avoid changing Auth
-  correoInput.readOnly = true;
-}
-
-function closeModal() {
-  modal.setAttribute("aria-hidden", "true");
-  modal.dataset.userid = "";
 }
 
 // ---------- AUTH ----------
@@ -101,7 +79,7 @@ onAuthStateChanged(auth, async (u) => {
     usuarioActual = { id: snap.id, ...snap.data() };
     rolUsuarioSpan.textContent = usuarioActual.rol || "";
 
-    // llenar tarjeta de usuario (HTML ya provisto)
+    // llenar tarjeta información
     const infoNombre = document.getElementById("info-nombre");
     const infoRol = document.getElementById("info-rol");
     const infoCorreo = document.getElementById("info-correo");
@@ -124,15 +102,17 @@ onAuthStateChanged(auth, async (u) => {
       if (infoNivel) infoNivel.textContent = usuarioActual.nivel || "-";
     }
 
-    // show/hide buscador for Admin + Subdirector
-    if (["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
-      buscador.style.display = "inline-block";
-    } else {
+    // ⛔ OCULTAR TABLA PARA ROLES SIN PERMISOS
+    if (!["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
+      if (tablaSection) tablaSection.style.display = "none";   // <---- AQUÍ LA SOLUCIÓN
       buscador.style.display = "none";
+    } else {
+      buscador.style.display = "inline-block";
+      if (tablaSection) tablaSection.style.display = "block";
     }
 
-    // cargar datos
     await cargarUsuariosYComunicados();
+
   } catch (err) {
     console.error(err);
     Swal.fire("Error", "No se pudo obtener tu perfil.", "error");
@@ -145,7 +125,7 @@ btnCerrar.onclick = async () => {
   window.location.href = "login.html";
 };
 
-// ---------- CARGAR USUARIOS + COMUNICADOS ----------
+// ---------- CARGAR USUARIOS Y COMUNICADOS ----------
 async function cargarUsuariosYComunicados() {
   try {
     const q = query(collection(db, "usuarios"), orderBy("nombre"));
@@ -153,7 +133,6 @@ async function cargarUsuariosYComunicados() {
 
     usuariosTodos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Si Subdirector => quitar Administrativos y además filtrar por nivel igual al del Subdirector
     if (usuarioActual.rol === "Subdirector") {
       const nivelSub = usuarioActual.nivel || "";
       usuariosTodos = usuariosTodos.filter(u =>
@@ -161,25 +140,21 @@ async function cargarUsuariosYComunicados() {
       );
     }
 
-    // Otros roles (Profesor, Auxiliar, Toe) no deberían ver la tabla — manejado en render
     usuariosFiltrados = [...usuariosTodos];
-
     totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
     paginaActual = 1;
 
     renderPagina(paginaActual);
-
-    // comunicados
     cargarComunicados();
+
   } catch (err) {
     console.error(err);
     Swal.fire("Error", "No se pudieron cargar usuarios.", "error");
   }
 }
 
-// ---------- RENDER PÁGINA (tabla + handlers) ----------
+// ---------- RENDER PÁGINA ----------
 function renderPagina(page) {
-  // ensure valid
   totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
   if (page < 1) page = 1;
   if (page > totalPaginas) page = totalPaginas;
@@ -191,12 +166,7 @@ function renderPagina(page) {
 
   tablaBody.innerHTML = "";
 
-  // If role is not allowed to see the table, show message:
   if (!["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
-    tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px;">No tienes permiso para ver la lista de usuarios.</td></tr>`;
-    renderChips();
-    btnPrev.disabled = true;
-    btnNext.disabled = true;
     return;
   }
 
@@ -212,12 +182,12 @@ function renderPagina(page) {
         <td>${escapeHtml(u.grado || "-")}</td>
         <td>${escapeHtml(u.nivel || "-")}</td>
         <td style="text-align:center;">
-          ${usuarioActual.rol === "Administrativo" ? `
-            <button class="edit" data-id="${u.id}">Editar</button>
-            <button class="delete" data-id="${u.id}">Eliminar</button>
-          ` : `
-            <button class="ver" data-id="${u.id}">Ver</button>
-          `}
+          ${
+            usuarioActual.rol === "Administrativo"
+              ? `<button class="edit" data-id="${u.id}">Editar</button>
+                 <button class="delete" data-id="${u.id}">Eliminar</button>`
+              : `<button class="ver" data-id="${u.id}">Ver</button>`
+          }
         </td>
       `;
       tablaBody.appendChild(tr);
@@ -229,21 +199,16 @@ function renderPagina(page) {
   btnPrev.disabled = paginaActual <= 1;
   btnNext.disabled = paginaActual >= totalPaginas;
 
-  // attach handlers AFTER rows exist
-  // Edit (Admin only)
   tablaBody.querySelectorAll(".edit").forEach(btn => {
     btn.onclick = async (e) => {
       const id = e.currentTarget.dataset.id;
-      if (usuarioActual.rol !== "Administrativo") return;
       const u = usuariosTodos.find(x => x.id === id) || {};
       openEditModal(id, u);
     };
   });
 
-  // Delete (Admin only)
   tablaBody.querySelectorAll(".delete").forEach(btn => {
     btn.onclick = async (e) => {
-      if (usuarioActual.rol !== "Administrativo") return;
       const id = e.currentTarget.dataset.id;
       const u = usuariosTodos.find(x => x.id === id);
       const res = await Swal.fire({
@@ -254,13 +219,16 @@ function renderPagina(page) {
         confirmButtonText: "Eliminar"
       });
       if (!res.isConfirmed) return;
+
       try {
         await deleteDoc(doc(db, "usuarios", id));
-        // update local lists
+
         usuariosTodos = usuariosTodos.filter(x => x.id !== id);
         usuariosFiltrados = usuariosFiltrados.filter(x => x.id !== id);
+
         totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
         if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
         renderPagina(paginaActual);
         Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
       } catch (err) {
@@ -270,7 +238,6 @@ function renderPagina(page) {
     };
   });
 
-  // Ver (Subdirector and Admin could also use but Admin has edit)
   tablaBody.querySelectorAll(".ver").forEach(btn => {
     btn.onclick = (e) => {
       const id = e.currentTarget.dataset.id;
@@ -288,9 +255,12 @@ function renderPagina(page) {
   });
 }
 
-// ---------- RENDER CHIPS ----------
+// ---------- CHIPS ----------
 function renderChips() {
   chipsContainer.innerHTML = "";
+
+  if (!["Administrativo", "Subdirector"].includes(usuarioActual.rol)) return;
+
   const visibleWindow = 2;
   const pages = [];
 
@@ -323,10 +293,9 @@ function renderChips() {
 
 // ---------- BUSCADOR ----------
 buscador.addEventListener("input", () => {
-  const term = buscador.value.trim().toLowerCase();
+  if (!["Administrativo", "Subdirector"].includes(usuarioActual.rol)) return;
 
-  // only Admin and Subdirector can search
-  if (!["Administrativo", "Subdirector"].includes(usuarioActual?.rol)) return;
+  const term = buscador.value.trim().toLowerCase();
 
   if (!term) {
     usuariosFiltrados = [...usuariosTodos];
@@ -351,9 +320,8 @@ btnNext.onclick = () => {
   if (paginaActual < totalPaginas) renderPagina(paginaActual + 1);
 };
 
-// ---------- GUARDAR EDICIÓN (Admin ONLY) ----------
+// ---------- GUARDAR EDICIÓN ----------
 guardarBtn.onclick = async () => {
-  // only admin can save
   if (usuarioActual.rol !== "Administrativo") {
     Swal.fire("Permiso denegado", "No tienes permiso para editar.", "warning");
     return;
@@ -367,7 +335,6 @@ guardarBtn.onclick = async () => {
 
   const payload = {
     nombre: nombreInput.value.trim(),
-    // correo is readonly and not updated in Auth; we still store it in Firestore if changed locally
     correo: correoInput.value.trim(),
     rol: rolInput.value,
     grado: gradoInput.value.trim(),
@@ -377,7 +344,6 @@ guardarBtn.onclick = async () => {
   try {
     await updateDoc(doc(db, "usuarios", id), payload);
 
-    // update local
     usuariosTodos = usuariosTodos.map(u => u.id === id ? { id, ...payload } : u);
     usuariosFiltrados = usuariosFiltrados.map(u => u.id === id ? { id, ...payload } : u);
 
@@ -392,11 +358,12 @@ guardarBtn.onclick = async () => {
 
 cancelarBtn.onclick = () => closeModal();
 
-// ---------- COMUNICADOS (5 recientes) ----------
+// ---------- COMUNICADOS ----------
 async function cargarComunicados() {
   try {
     const q = query(collection(db, "comunicados"), orderBy("fechaRegistro", "desc"), limit(5));
     const snap = await getDocs(q);
+
     listaComunicadosCont.innerHTML = "";
 
     if (snap.empty) {
@@ -415,14 +382,13 @@ async function cargarComunicados() {
       `;
       listaComunicadosCont.appendChild(div);
     });
+
   } catch (err) {
     console.error(err);
     listaComunicadosCont.innerHTML = "<p>Error cargando comunicados.</p>";
   }
 }
 
-// ---------- Inicialización mínima ----------
 (function init() {
-  // hide buscador by default, auth flow will show if allowed
   buscador.style.display = "none";
 })();
