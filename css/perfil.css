@@ -220,6 +220,24 @@ td button:hover {
     color: var(--blanco);
 }
 
+/* BOTONES DE BLOQUEO / DESBLOQUEO */
+.block {
+    background: #757575; /* gris */
+    color: var(--blanco);
+}
+.block:hover {
+    background: #5a5a5a;
+}
+
+.unlock {
+    background: #4caf50; /* verde */
+    color: var(--blanco);
+}
+.unlock:hover {
+    background: #388e3c;
+}
+
+
 /* Contenedor de botones en la columna de acción */
 .btn-group {
     display: flex;

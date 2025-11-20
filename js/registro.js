@@ -58,14 +58,15 @@ formRegistro.addEventListener("submit", async (e) => {
 
     // Guardar datos en Firestore
     await setDoc(doc(db, "usuarios", user.uid), {
-      uid: user.uid,
-      nombre,
-      correo,
-      rol,
-      grado,
-      nivel,
-      fechaRegistro: serverTimestamp()
-    });
+     uid: user.uid,
+     nombre,
+     correo,
+     rol,
+     grado,
+     nivel,
+     activo: true,               // <-- NUEVO CAMPO
+    fechaRegistro: serverTimestamp()
+});
 
     mostrarLoader(false);
     alert(`✅ Registro exitoso. Bienvenido/a ${nombre}.`);
