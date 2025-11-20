@@ -1,142 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Iniciar Sesión</title>
-  <link rel="icon" type="image/png" href="img/logo.png" />
-  <link rel="stylesheet" href="css/colors.css" />
-  <style>
-    body {
-      font-family: var(--font-family);
-      background: linear-gradient(135deg, var(--celeste), var(--azul-oscuro));
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .login-container {
-      background: var(--blanco);
-      padding: 30px 25px;
-      border-radius: 15px;
-      box-shadow: 0px 8px 25px rgba(0,0,0,0.2);
-      width: 90%;
-      max-width: 400px;
-      animation: fadeInUp 0.8s ease;
-    }
-    .login-container h2 {
-      text-align: center;
-      margin-bottom: 25px;
-      color: var(--azul-oscuro);
-      font-size: 24px;
-    }
-    .login-container input {
-      width: 95%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid var(--azul-borde);
-      border-radius: 8px;
-      font-size: 15px;
-      transition: all 0.3s ease;
-    }
-    .login-container input:focus {
-      border-color: var(--celeste);
-      box-shadow: 0 0 8px rgba(110,193,228,0.6);
-      outline: none;
-    }
-    .password-container { position: relative; }
-    .toggle-password {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      color: var(--azul-borde);
-      font-size: 13px;
-      font-weight: bold;
-      user-select: none;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background: var(--rojo);
-      color: var(--blanco);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 15px;
-      font-size: 16px;
-      font-weight: bold;
-      transition: transform 0.2s ease, background 0.3s ease;
-    }
-    button:hover {
-      background: var(--celeste);
-      transform: scale(1.05);
-    }
-    .register-link {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 14px;
-      color: var(--gris);
-    }
-    .register-link a {
-      color: var(--azul-borde);
-      text-decoration: none;
-      font-weight: bold;
-      position: relative;
-    }
-    .register-link a::after {
-      content: "";
-      position: absolute;
-      width: 0;
-      height: 2px;
-      left: 0;
-      bottom: -3px;
-      background: var(--azul-borde);
-      transition: width 0.3s ease;
-    }
-    .register-link a:hover::after { width: 100%; }
-    .logo {
-      display: block;
-      margin: 0 auto 15px auto;
-      max-width: 120px;
-      height: auto;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iniciar Sesión</title>
+<link rel="icon" type="image/png" href="img/logo.png" />
+<link rel="stylesheet" href="css/colors.css" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+  body {
+    font-family: var(--font-family);
+    background: linear-gradient(135deg, var(--celeste), var(--azul-oscuro));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .login-container {
+    background: var(--blanco);
+    padding: 30px 25px;
+    border-radius: 15px;
+    box-shadow: 0px 8px 25px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 400px;
+  }
+  .login-container h2 { text-align: center; margin-bottom: 25px; color: var(--azul-oscuro); }
+  .login-container input { width: 95%; padding: 12px; margin: 10px 0; border: 1px solid var(--azul-borde); border-radius: 8px; }
+  .password-container { position: relative; }
+  .toggle-password { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; }
+  button { width: 100%; padding: 12px; margin-top: 15px; border: none; border-radius: 8px; cursor: pointer; background: var(--rojo); color: var(--blanco); font-weight: bold; }
+  button:hover { background: var(--celeste); }
+</style>
 </head>
 <body>
-  <div class="login-container">
-    <img src="img/logo.png" alt="Logo" class="logo">
-    <h2>Iniciar Sesión</h2>
-
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Correo Electrónico" required autocomplete="email" />
-      <div class="password-container">
-        <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password"/>
-        <span class="toggle-password" id="togglePassword">MOSTRAR</span>
-      </div>
-      <button type="submit">INGRESAR</button>
-      <div class="register-link">
-        ¿No tienes una cuenta? <a href="registro.html">Regístrate</a>
-      </div>
-    </form>
-  </div>
+<div class="login-container">
+  <img src="img/logo.png" alt="Logo" class="logo">
+  <h2>Iniciar Sesión</h2>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="Correo Electrónico" required autocomplete="email" />
+    <div class="password-container">
+      <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password"/>
+      <span class="toggle-password" id="togglePassword">MOSTRAR</span>
+    </div>
+    <button type="submit">INGRESAR</button>
+  </form>
+</div>
 
 <script type="module">
-import { auth, db } from "./js/firebaseconfig.js";
-import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { db } from "./js/firebaseconfig.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const loginForm = document.getElementById("loginForm");
 const passwordInput = document.getElementById("password");
 const togglePassword = document.getElementById("togglePassword");
+
+togglePassword.addEventListener("click", () => {
+  const isPassword = passwordInput.type === "password";
+  passwordInput.type = isPassword ? "text" : "password";
+  togglePassword.textContent = isPassword ? "OCULTAR" : "MOSTRAR";
+});
 
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -144,57 +67,46 @@ loginForm.addEventListener("submit", async (e) => {
   const password = passwordInput.value;
 
   try {
-    // 1️⃣ Intentar iniciar sesión
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
+    // 🔹 Buscar usuario por correo
+    const q = query(collection(db, "usuarios"), where("correo", "==", email));
+    const snap = await getDocs(q);
 
-    // 2️⃣ Obtener documento de Firestore
-    const docRef = doc(db, "usuarios", user.uid);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      await signOut(auth);
-      Swal.fire("Error", "No se encontraron datos del usuario en la base de datos.", "error");
+    if (snap.empty) {
+      Swal.fire("Error", "Usuario no registrado.", "error");
       return;
     }
 
-    const datosUsuario = docSnap.data();
+    const userDoc = snap.docs[0];
+    const data = userDoc.data();
 
-    // 3️⃣ Verificar si está bloqueado
-    if (datosUsuario.activo === false) {
-      await signOut(auth);
+    // 🔹 Verificar si está bloqueado
+    if (data.activo === false) {
       Swal.fire("Cuenta bloqueada", "Tu cuenta ha sido bloqueada. Comunícate con tu supervisor.", "error");
       return;
     }
 
-    // 4️⃣ Usuario activo → guardar info local y redirigir
+    // 🔹 Verificar contraseña (suponiendo que la guardas en Firestore como 'password')
+    if (data.password !== password) {
+      Swal.fire("Error", "Contraseña incorrecta.", "error");
+      return;
+    }
+
+    // 🔹 Guardar info local y redirigir
     localStorage.setItem("usuario", JSON.stringify({
-      uid: user.uid,
-      nombre: datosUsuario.nombre,
-      correo: datosUsuario.correo,
-      rol: datosUsuario.rol || "Profesor",
-      grado: datosUsuario.grado || "",
-      nivel: datosUsuario.nivel || ""
+      uid: userDoc.id,
+      nombre: data.nombre,
+      correo: data.correo,
+      rol: data.rol || "Profesor",
+      grado: data.grado || "",
+      nivel: data.nivel || ""
     }));
 
     window.location.href = "dashboard.html";
 
-  } catch (error) {
-    console.error(error);
-    let msg = "Error al iniciar sesión.";
-    if (error.code === "auth/invalid-email") msg = "Correo inválido.";
-    else if (error.code === "auth/user-not-found") msg = "Usuario no registrado.";
-    else if (error.code === "auth/wrong-password") msg = "Contraseña incorrecta.";
-
-    Swal.fire("Error", msg, "error");
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "Hubo un problema al iniciar sesión.", "error");
   }
-});
-
-// Mostrar / ocultar contraseña
-togglePassword.addEventListener("click", () => {
-  const isPassword = passwordInput.type === "password";
-  passwordInput.type = isPassword ? "text" : "password";
-  togglePassword.textContent = isPassword ? "OCULTAR" : "MOSTRAR";
 });
 </script>
 </body>
