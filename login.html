@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Iniciar Sesión</title>
   <link rel="icon" type="image/png" href="img/logo.png" />
-
   <link rel="stylesheet" href="css/colors.css" />
   <style>
     body {
@@ -104,17 +103,13 @@
       max-width: 120px;
       height: auto;
     }
-    .error-msg {
-      color: var(--rojo);
-      font-size: 14px;
-      text-align: center;
-      margin-top: 10px;
-    }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(40px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
   <div class="login-container">
@@ -123,64 +118,58 @@
 
     <form id="loginForm">
       <input type="email" id="email" placeholder="Correo Electrónico" required autocomplete="email" />
-
-
       <div class="password-container">
         <input type="password" id="password" placeholder="Contraseña" required autocomplete="current-password"/>
         <span class="toggle-password" id="togglePassword">MOSTRAR</span>
       </div>
-
       <button type="submit">INGRESAR</button>
-      <div class="error-msg" id="errorMsg"></div>
-
       <div class="register-link">
         ¿No tienes una cuenta? <a href="registro.html">Regístrate</a>
       </div>
     </form>
   </div>
 
-  <!-- Firebase -->
 <script type="module">
 import { auth, db } from "./js/firebaseconfig.js";
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const loginForm = document.getElementById("loginForm");
-const errorMsg = document.getElementById("errorMsg");
 const passwordInput = document.getElementById("password");
 const togglePassword = document.getElementById("togglePassword");
 
-// Login
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email").value.trim();
   const password = passwordInput.value;
 
   try {
-    // 1️⃣ Buscar usuario en Firestore antes de iniciar sesión
-    const q = query(collection(db, "usuarios"), where("correo", "==", email));
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      errorMsg.textContent = "Usuario no registrado.";
-      return;
-    }
-
-    const datosUsuario = snap.docs[0].data();
-    const uid = snap.docs[0].id;
-
-    // 2️⃣ Revisar si está bloqueado
-    if (datosUsuario.activo === false) {
-      errorMsg.textContent = "Tu cuenta ha sido bloqueada. Comunícate con tu supervisor.";
-      return;
-    }
-
-    // 3️⃣ Si está activo, iniciar sesión
+    // 1️⃣ Intentar iniciar sesión
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-    // Guardar info local (opcional)
+    // 2️⃣ Obtener documento de Firestore
+    const docRef = doc(db, "usuarios", user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      await signOut(auth);
+      Swal.fire("Error", "No se encontraron datos del usuario en la base de datos.", "error");
+      return;
+    }
+
+    const datosUsuario = docSnap.data();
+
+    // 3️⃣ Verificar si está bloqueado
+    if (datosUsuario.activo === false) {
+      await signOut(auth);
+      Swal.fire("Cuenta bloqueada", "Tu cuenta ha sido bloqueada. Comunícate con tu supervisor.", "error");
+      return;
+    }
+
+    // 4️⃣ Usuario activo → guardar info local y redirigir
     localStorage.setItem("usuario", JSON.stringify({
-      uid: uid,
+      uid: user.uid,
       nombre: datosUsuario.nombre,
       correo: datosUsuario.correo,
       rol: datosUsuario.rol || "Profesor",
@@ -196,7 +185,8 @@ loginForm.addEventListener("submit", async (e) => {
     if (error.code === "auth/invalid-email") msg = "Correo inválido.";
     else if (error.code === "auth/user-not-found") msg = "Usuario no registrado.";
     else if (error.code === "auth/wrong-password") msg = "Contraseña incorrecta.";
-    errorMsg.textContent = msg;
+
+    Swal.fire("Error", msg, "error");
   }
 });
 
@@ -207,7 +197,5 @@ togglePassword.addEventListener("click", () => {
   togglePassword.textContent = isPassword ? "OCULTAR" : "MOSTRAR";
 });
 </script>
-
-
 </body>
 </html>
