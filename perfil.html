@@ -12,9 +12,17 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-  <!-- NAVBAR -->
+
+  <!-- 🔹 Navbar actualizado -->
   <nav class="navbar">
-    <div class="logo">Sistema — Usuarios</div>
+    <div class="logo">Perfil</div>
+
+    <ul class="nav-links">
+      <li><a href="dashboard.html">Inicio</a></li>
+      <!--<li><a href="recursos.html">Recursos</a></li>-->
+      <!--<li><a href="biblioteca.html">Biblioteca</a></li>-->
+    </ul>
+
     <div class="nav-actions">
       <span id="rol-usuario" class="rol-usuario"></span>
       <button id="btnCerrar" class="btn-logout">Cerrar sesión</button>
@@ -24,22 +32,23 @@
   <main>
     <h1 id="titulo-pantalla">Información del Usuario</h1>
 
+    <!-- 🔹 Info del usuario activo -->
     <div id="usuario-info-box" class="usuario-info-box">
-  <p><b>Nombre:</b> <span id="info-nombre">-</span></p>
-  <p><b>Rol:</b> <span id="info-rol">-</span></p>
-  <p><b>Correo:</b> <span id="info-correo">-</span></p>
-  <p id="info-grado-line"><b>Grado:</b> <span id="info-grado">-</span></p>
-  <p id="info-nivel-line"><b>Nivel:</b> <span id="info-nivel">-</span></p>
-</div>
+      <p><b>Nombre:</b> <span id="info-nombre">-</span></p>
+      <p><b>Rol:</b> <span id="info-rol">-</span></p>
+      <p><b>Correo:</b> <span id="info-correo">-</span></p>
+      <p id="info-grado-line"><b>Grado:</b> <span id="info-grado">-</span></p>
+      <p id="info-nivel-line"><b>Nivel:</b> <span id="info-nivel">-</span></p>
+    </div>
 
-
-    <!-- acciones (solo ADMIN verá "Nuevo usuario") -->
+    <!-- 🔹 Acciones -->
     <div class="acciones">
       <input id="buscador" placeholder="Buscar por nombre, rol, grado o nivel..." />
+      <!-- Botón visible solo para Administrativos -->
       <!--<button id="nuevo-usuario-btn" class="btn-primario" style="display:none">+ Nuevo usuario</button> -->
     </div>
 
-    <!-- tabla -->
+    <!-- 🔹 Tabla -->
     <div class="tabla-wrap">
       <table>
         <thead>
@@ -56,21 +65,21 @@
       </table>
     </div>
 
-    <!-- paginación -->
+    <!-- 🔹 Paginación -->
     <div class="paginacion">
       <button id="btn-prev" class="nav-btn">Anterior</button>
       <div id="paginacion-chips" class="chips"></div>
       <button id="btn-next" class="nav-btn">Siguiente</button>
     </div>
 
-    <!-- comunicados (5 recientes, visibles para todos) -->
+    <!-- 🔹 Comunicados -->
     <section class="comunicados">
       <h2>Comunicados recientes</h2>
       <div id="lista-comunicados"></div>
     </section>
   </main>
 
-  <!-- MODAL: Crear / Editar usuario -->
+  <!-- 🔹 Modal usuarios -->
   <div id="modal-usuario" class="modal" aria-hidden="true">
     <div class="modal-content">
       <h3 id="modal-title">Editar Usuario</h3>
@@ -79,7 +88,7 @@
       <input id="nombre-input" type="text" />
 
       <label>Correo</label>
-      <input id="correo-input" type="email" />
+      <input id="correo-input" type="email" readonly />
 
       <label>Rol</label>
       <select id="rol-input">

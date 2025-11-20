@@ -1,9 +1,15 @@
-// perfil.js
+// perfil.js (FINAL)
+// - 5 usuarios por página
+// - Subdirector VE solo usuarios del mismo nivel (y no ve Administrativos)
+// - Buscador para Administrativo + Subdirector (nombre, rol, grado, nivel)
+// - CRUD solo para Administrativo (editar / eliminar). No crear.
+// - Modal de edición: correo readonly (no se actualiza en Auth).
+// - 5 comunicados recientes visibles para todos.
+
 import { auth, db } from "./firebaseconfig.js";
 import {
   collection,
   getDocs,
-  addDoc,
   doc,
   getDoc,
   updateDoc,
@@ -18,28 +24,24 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 // ---------- DOM ----------
 const rolUsuarioSpan = document.getElementById("rol-usuario");
 const btnCerrar = document.getElementById("btnCerrar");
-const titulo = document.getElementById("titulo-pantalla");
 
 const buscador = document.getElementById("buscador");
-const nuevoUsuarioBtn = document.getElementById("nuevo-usuario-btn");
 
 const tablaBody = document.getElementById("tabla-usuarios");
-
 const btnPrev = document.getElementById("btn-prev");
 const btnNext = document.getElementById("btn-next");
 const chipsContainer = document.getElementById("paginacion-chips");
 
 const listaComunicadosCont = document.getElementById("lista-comunicados");
 
-// modal
+// Modal (edición)
 const modal = document.getElementById("modal-usuario");
-const modalTitle = document.getElementById("modal-title") || document.createElement("div");
+const modalTitle = document.getElementById("modal-title");
 const nombreInput = document.getElementById("nombre-input");
 const correoInput = document.getElementById("correo-input");
 const rolInput = document.getElementById("rol-input");
 const gradoInput = document.getElementById("grado-input");
 const nivelInput = document.getElementById("nivel-input");
-
 const guardarBtn = document.getElementById("guardar-btn");
 const cancelarBtn = document.getElementById("cancelar-btn");
 
@@ -51,29 +53,10 @@ let paginaActual = 1;
 const POR_PAGINA = 5;
 let totalPaginas = 1;
 
-// ---------- Roles exactos según nos diste ----------
+// ---------- Roles exactos ----------
 const ROLES = ["Administrativo", "Subdirector", "Profesor", "Auxiliar", "Toe"];
 
 // ---------- Helpers ----------
-function openModal(mode = "edit", userId = null) {
-  modal.setAttribute("aria-hidden", "false");
-  modal.dataset.mode = mode;
-  modal.dataset.userid = userId || "";
-  modalTitle && (modalTitle.textContent = mode === "create" ? "Nuevo Usuario" : "Editar Usuario");
-  if (mode === "create") {
-    nombreInput.value = "";
-    correoInput.value = "";
-    rolInput.value = ROLES[2] || "Profesor";
-    gradoInput.value = "";
-    nivelInput.value = "";
-  }
-}
-function closeModal() {
-  modal.setAttribute("aria-hidden", "true");
-  modal.dataset.mode = "";
-  modal.dataset.userid = "";
-}
-
 function escapeHtml(s) {
   if (!s) return "";
   return String(s).replace(/[&<>"'/]/g, (ch) => {
@@ -82,78 +65,111 @@ function escapeHtml(s) {
   });
 }
 
+function openEditModal(id, data) {
+  // Open modal only for Admin (callers should ensure this)
+  modal.setAttribute("aria-hidden", "false");
+  modal.dataset.userid = id || "";
+
+  modalTitle.textContent = "Editar Usuario";
+
+  nombreInput.value = data.nombre || "";
+  correoInput.value = data.correo || "";
+  rolInput.value = data.rol || ROLES[2];
+  gradoInput.value = data.grado || "";
+  nivelInput.value = data.nivel || "";
+
+  // correo readonly to avoid changing Auth
+  correoInput.readOnly = true;
+}
+
+function closeModal() {
+  modal.setAttribute("aria-hidden", "true");
+  modal.dataset.userid = "";
+}
+
 // ---------- AUTH ----------
 onAuthStateChanged(auth, async (u) => {
   if (!u) return (window.location.href = "login.html");
 
-  // traemos doc del usuario en "usuarios" para obtener rol y datos
-  const snap = await getDoc(doc(db, "usuarios", u.uid));
-  if (!snap.exists()) {
-    Swal.fire("Error", "Perfil no encontrado.", "error");
-    return;
+  try {
+    const snap = await getDoc(doc(db, "usuarios", u.uid));
+    if (!snap.exists()) {
+      Swal.fire("Error", "Perfil no encontrado.", "error");
+      return;
+    }
+
+    usuarioActual = { id: snap.id, ...snap.data() };
+    rolUsuarioSpan.textContent = usuarioActual.rol || "";
+
+    // llenar tarjeta de usuario (HTML ya provisto)
+    const infoNombre = document.getElementById("info-nombre");
+    const infoRol = document.getElementById("info-rol");
+    const infoCorreo = document.getElementById("info-correo");
+    const infoGradoLine = document.getElementById("info-grado-line");
+    const infoNivelLine = document.getElementById("info-nivel-line");
+    const infoGrado = document.getElementById("info-grado");
+    const infoNivel = document.getElementById("info-nivel");
+
+    if (infoNombre) infoNombre.textContent = usuarioActual.nombre || "-";
+    if (infoRol) infoRol.textContent = usuarioActual.rol || "-";
+    if (infoCorreo) infoCorreo.textContent = usuarioActual.correo || "-";
+
+    if (usuarioActual.rol === "Administrativo") {
+      if (infoGradoLine) infoGradoLine.style.display = "none";
+      if (infoNivelLine) infoNivelLine.style.display = "none";
+    } else {
+      if (infoGradoLine) infoGradoLine.style.display = "block";
+      if (infoNivelLine) infoNivelLine.style.display = "block";
+      if (infoGrado) infoGrado.textContent = usuarioActual.grado || "-";
+      if (infoNivel) infoNivel.textContent = usuarioActual.nivel || "-";
+    }
+
+    // show/hide buscador for Admin + Subdirector
+    if (["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
+      buscador.style.display = "inline-block";
+    } else {
+      buscador.style.display = "none";
+    }
+
+    // cargar datos
+    await cargarUsuariosYComunicados();
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "No se pudo obtener tu perfil.", "error");
   }
-  usuarioActual = { id: snap.id, ...snap.data() };
-
-  // mostrar rol en la UI
-  rolUsuarioSpan.textContent = usuarioActual.rol || "";
-
-  //mostrar ifnromacion del usuario
-  // ===== Mostrar información del usuario en la tarjeta =====
-document.getElementById("info-nombre").textContent = usuarioActual.nombre || "-";
-document.getElementById("info-rol").textContent = usuarioActual.rol || "-";
-document.getElementById("info-correo").textContent = usuarioActual.correo || "-";
-
-// Si es Administrativo → ocultar grado y nivel
-if (usuarioActual.rol === "Administrativo") {
-  document.getElementById("info-grado-line").style.display = "none";
-  document.getElementById("info-nivel-line").style.display = "none";
-} else {
-  document.getElementById("info-grado").textContent = usuarioActual.grado || "-";
-  document.getElementById("info-nivel").textContent = usuarioActual.nivel || "-";
-}
-
-
-  // mostrar botones según rol
-  if (usuarioActual.rol === "Administrativo") {
-    nuevoUsuarioBtn.style.display = "inline-block";
-  } else {
-    nuevoUsuarioBtn.style.display = "none";
-  }
-
-  // inicializar datos (usuarios + comunicados)
-  await cargarUsuariosYComunicados();
 });
 
-// cerrar sesión
+// ---------- CERRAR SESIÓN ----------
 btnCerrar.onclick = async () => {
   await signOut(auth);
   window.location.href = "login.html";
 };
 
-// ---------- CARGAR USUARIOS (y comunicados) ----------
+// ---------- CARGAR USUARIOS + COMUNICADOS ----------
 async function cargarUsuariosYComunicados() {
   try {
-    // Traemos TODOS los usuarios (aceptable para ~100 usuarios)
     const q = query(collection(db, "usuarios"), orderBy("nombre"));
     const snap = await getDocs(q);
 
     usuariosTodos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // Si current user es SUBDIRECTOR -> quitar Administrativos (no deben verlos)
+    // Si Subdirector => quitar Administrativos y además filtrar por nivel igual al del Subdirector
     if (usuarioActual.rol === "Subdirector") {
-      usuariosTodos = usuariosTodos.filter(u => u.rol !== "Administrativo");
+      const nivelSub = usuarioActual.nivel || "";
+      usuariosTodos = usuariosTodos.filter(u =>
+        u.rol !== "Administrativo" && (u.nivel || "") === nivelSub
+      );
     }
 
-    // Inicialmente, usuariosFiltrados = usuariosTodos
+    // Otros roles (Profesor, Auxiliar, Toe) no deberían ver la tabla — manejado en render
     usuariosFiltrados = [...usuariosTodos];
 
-    // calcular páginas
     totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
     paginaActual = 1;
 
     renderPagina(paginaActual);
 
-    // comunicados (5 recientes) — visibles para todos
+    // comunicados
     cargarComunicados();
   } catch (err) {
     console.error(err);
@@ -161,23 +177,29 @@ async function cargarUsuariosYComunicados() {
   }
 }
 
-// ---------- RENDER (tabla + chips) ----------
+// ---------- RENDER PÁGINA (tabla + handlers) ----------
 function renderPagina(page) {
-  // seguridad
-  if (!Array.isArray(usuariosFiltrados)) usuariosFiltrados = [];
-
+  // ensure valid
   totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
   if (page < 1) page = 1;
   if (page > totalPaginas) page = totalPaginas;
   paginaActual = page;
 
-  // slice
   const start = (page - 1) * POR_PAGINA;
   const end = start + POR_PAGINA;
   const pageItems = usuariosFiltrados.slice(start, end);
 
-  // render tabla
   tablaBody.innerHTML = "";
+
+  // If role is not allowed to see the table, show message:
+  if (!["Administrativo", "Subdirector"].includes(usuarioActual.rol)) {
+    tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px;">No tienes permiso para ver la lista de usuarios.</td></tr>`;
+    renderChips();
+    btnPrev.disabled = true;
+    btnNext.disabled = true;
+    return;
+  }
+
   if (pageItems.length === 0) {
     tablaBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:18px;">No hay usuarios</td></tr>`;
   } else {
@@ -189,7 +211,7 @@ function renderPagina(page) {
         <td>${escapeHtml(u.rol || "-")}</td>
         <td>${escapeHtml(u.grado || "-")}</td>
         <td>${escapeHtml(u.nivel || "-")}</td>
-        <td>
+        <td style="text-align:center;">
           ${usuarioActual.rol === "Administrativo" ? `
             <button class="edit" data-id="${u.id}">Editar</button>
             <button class="delete" data-id="${u.id}">Eliminar</button>
@@ -202,81 +224,77 @@ function renderPagina(page) {
     }
   }
 
-  // attach eventos de fila
+  renderChips();
+
+  btnPrev.disabled = paginaActual <= 1;
+  btnNext.disabled = paginaActual >= totalPaginas;
+
+  // attach handlers AFTER rows exist
+  // Edit (Admin only)
   tablaBody.querySelectorAll(".edit").forEach(btn => {
     btn.onclick = async (e) => {
       const id = e.currentTarget.dataset.id;
-      // cargar datos al modal
-      const s = usuariosTodos.find(x => x.id === id) || (await (await getDoc(doc(db,"usuarios",id))).data());
-      nombreInput.value = s.nombre || "";
-      correoInput.value = s.correo || "";
-      rolInput.value = s.rol || ROLES[2];
-      gradoInput.value = s.grado || "";
-      nivelInput.value = s.nivel || "";
-      openModal("edit", id);
+      if (usuarioActual.rol !== "Administrativo") return;
+      const u = usuariosTodos.find(x => x.id === id) || {};
+      openEditModal(id, u);
     };
   });
 
+  // Delete (Admin only)
   tablaBody.querySelectorAll(".delete").forEach(btn => {
     btn.onclick = async (e) => {
+      if (usuarioActual.rol !== "Administrativo") return;
       const id = e.currentTarget.dataset.id;
-      const usuario = usuariosTodos.find(x => x.id === id);
-      const answer = await Swal.fire({
-        title: `Eliminar ${usuario?.nombre || "usuario"}`,
+      const u = usuariosTodos.find(x => x.id === id);
+      const res = await Swal.fire({
+        title: `Eliminar ${u?.nombre || "usuario"}?`,
         text: "Esta acción es irreversible.",
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Eliminar"
       });
-      if (!answer.isConfirmed) return;
+      if (!res.isConfirmed) return;
       try {
         await deleteDoc(doc(db, "usuarios", id));
-        // actualizar local
+        // update local lists
         usuariosTodos = usuariosTodos.filter(x => x.id !== id);
         usuariosFiltrados = usuariosFiltrados.filter(x => x.id !== id);
         totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
         if (paginaActual > totalPaginas) paginaActual = totalPaginas;
         renderPagina(paginaActual);
-        Swal.fire("Eliminado", "Usuario eliminado correctamente", "success");
+        Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
       } catch (err) {
         console.error(err);
-        Swal.fire("Error", "No se pudo eliminar", "error");
+        Swal.fire("Error", "No se pudo eliminar.", "error");
       }
     };
   });
 
+  // Ver (Subdirector and Admin could also use but Admin has edit)
   tablaBody.querySelectorAll(".ver").forEach(btn => {
     btn.onclick = (e) => {
       const id = e.currentTarget.dataset.id;
-      const usuario = usuariosTodos.find(x => x.id === id);
+      const u = usuariosTodos.find(x => x.id === id) || {};
       Swal.fire({
-        title: usuario?.nombre || "Usuario",
+        title: escapeHtml(u.nombre || "Usuario"),
         html: `
-          <b>Correo:</b> ${escapeHtml(usuario?.correo || "-")}<br/>
-          <b>Rol:</b> ${escapeHtml(usuario?.rol || "-")}<br/>
-          <b>Grado:</b> ${escapeHtml(usuario?.grado || "-")}<br/>
-          <b>Nivel:</b> ${escapeHtml(usuario?.nivel || "-")}
+          <b>Correo:</b> ${escapeHtml(u.correo || "-")}<br/>
+          <b>Rol:</b> ${escapeHtml(u.rol || "-")}<br/>
+          <b>Grado:</b> ${escapeHtml(u.grado || "-")}<br/>
+          <b>Nivel:</b> ${escapeHtml(u.nivel || "-")}
         `
       });
     };
   });
-
-  // render chips compactos
-  renderChips();
-
-  // prev / next disabled
-  btnPrev.disabled = paginaActual <= 1;
-  btnNext.disabled = paginaActual >= totalPaginas;
 }
 
+// ---------- RENDER CHIPS ----------
 function renderChips() {
   chipsContainer.innerHTML = "";
-  const visibleWindow = 2; // números a cada lado
+  const visibleWindow = 2;
   const pages = [];
 
-  // always include 1
   pages.push(1);
-
   const left = Math.max(2, paginaActual - visibleWindow);
   const right = Math.min(totalPaginas - 1, paginaActual + visibleWindow);
 
@@ -303,25 +321,24 @@ function renderChips() {
   }
 }
 
-// ---------- BUSCADOR (nombre | rol | grado | nivel) ----------
+// ---------- BUSCADOR ----------
 buscador.addEventListener("input", () => {
-  const t = buscador.value.trim().toLowerCase();
+  const term = buscador.value.trim().toLowerCase();
 
-  // solo Administrativo y Subdirector pueden usar buscador (ya escondido para otros)
+  // only Admin and Subdirector can search
   if (!["Administrativo", "Subdirector"].includes(usuarioActual?.rol)) return;
 
-  if (!t) {
+  if (!term) {
     usuariosFiltrados = [...usuariosTodos];
   } else {
-    usuariosFiltrados = usuariosTodos.filter(u => {
-      return (
-        (u.nombre || "").toLowerCase().includes(t) ||
-        (u.rol || "").toLowerCase().includes(t) ||
-        (u.grado || "").toLowerCase().includes(t) ||
-        (u.nivel || "").toLowerCase().includes(t)
-      );
-    });
+    usuariosFiltrados = usuariosTodos.filter(u =>
+      (u.nombre || "").toLowerCase().includes(term) ||
+      (u.rol || "").toLowerCase().includes(term) ||
+      (u.grado || "").toLowerCase().includes(term) ||
+      (u.nivel || "").toLowerCase().includes(term)
+    );
   }
+
   totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
   renderPagina(1);
 });
@@ -334,20 +351,23 @@ btnNext.onclick = () => {
   if (paginaActual < totalPaginas) renderPagina(paginaActual + 1);
 };
 
-// ---------- Nuevo usuario (Admin) ----------
-nuevoUsuarioBtn.onclick = () => {
-  openModal("create", null);
-};
-
-// ---------- Modal acciones ----------
-cancelarBtn.onclick = () => closeModal();
-
+// ---------- GUARDAR EDICIÓN (Admin ONLY) ----------
 guardarBtn.onclick = async () => {
-  const mode = modal.dataset.mode || "edit";
-  const id = modal.dataset.userid || null;
+  // only admin can save
+  if (usuarioActual.rol !== "Administrativo") {
+    Swal.fire("Permiso denegado", "No tienes permiso para editar.", "warning");
+    return;
+  }
+
+  const id = modal.dataset.userid;
+  if (!id) {
+    closeModal();
+    return;
+  }
 
   const payload = {
     nombre: nombreInput.value.trim(),
+    // correo is readonly and not updated in Auth; we still store it in Firestore if changed locally
     correo: correoInput.value.trim(),
     rol: rolInput.value,
     grado: gradoInput.value.trim(),
@@ -355,37 +375,26 @@ guardarBtn.onclick = async () => {
   };
 
   try {
-    if (mode === "create") {
-      const ref = await addDoc(collection(db, "usuarios"), payload);
-      // añadir localmente (si subdirector no debería ver administrativos, manejar)
-      usuariosTodos.unshift({ id: ref.id, ...payload });
-      if (!(usuarioActual.rol === "Subdirector" && payload.rol === "Administrativo")) {
-        usuariosFiltrados.unshift({ id: ref.id, ...payload });
-      }
-      Swal.fire("Creado", "Usuario creado correctamente", "success");
-    } else {
-      // editar
-      await updateDoc(doc(db, "usuarios", id), payload);
-      // actualizar localmente
-      usuariosTodos = usuariosTodos.map(u => u.id === id ? { id, ...payload } : u);
-      usuariosFiltrados = usuariosFiltrados.map(u => u.id === id ? { id, ...payload } : u);
-      Swal.fire("Actualizado", "Usuario actualizado", "success");
-    }
+    await updateDoc(doc(db, "usuarios", id), payload);
 
-    // recalcular páginas y render
-    totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / POR_PAGINA));
-    renderPagina(1);
+    // update local
+    usuariosTodos = usuariosTodos.map(u => u.id === id ? { id, ...payload } : u);
+    usuariosFiltrados = usuariosFiltrados.map(u => u.id === id ? { id, ...payload } : u);
+
+    Swal.fire("Actualizado", "Usuario actualizado correctamente.", "success");
     closeModal();
+    renderPagina(paginaActual);
   } catch (err) {
     console.error(err);
-    Swal.fire("Error", "No se pudo guardar el usuario", "error");
+    Swal.fire("Error", "No se pudo actualizar.", "error");
   }
 };
 
-// ---------- Comunicados (5 recientes) ----------
+cancelarBtn.onclick = () => closeModal();
+
+// ---------- COMUNICADOS (5 recientes) ----------
 async function cargarComunicados() {
   try {
-    // query 5 comunicados ordenados por fechaRegistro desc
     const q = query(collection(db, "comunicados"), orderBy("fechaRegistro", "desc"), limit(5));
     const snap = await getDocs(q);
     listaComunicadosCont.innerHTML = "";
@@ -399,9 +408,11 @@ async function cargarComunicados() {
       const c = d.data();
       const div = document.createElement("div");
       div.className = "comunicado";
-      div.innerHTML = `<h4>${escapeHtml(c.titulo || '-')}</h4>
+      div.innerHTML = `
+        <h4>${escapeHtml(c.titulo || '-')}</h4>
         <p>${escapeHtml(c.descripcion || '-')}</p>
-        <small>${escapeHtml(c.fecha || '')}</small>`;
+        <small>${escapeHtml(c.fecha || '')}</small>
+      `;
       listaComunicadosCont.appendChild(div);
     });
   } catch (err) {
@@ -410,15 +421,8 @@ async function cargarComunicados() {
   }
 }
 
-// ---------- Load inicial ----------
-async function init() {
-  // esconder buscador inicialmente para roles no permitidos
+// ---------- Inicialización mínima ----------
+(function init() {
+  // hide buscador by default, auth flow will show if allowed
   buscador.style.display = "none";
-
-  // detectar qué roles pueden buscar (Admin + Subdirector)
-  // el onAuthStateChanged arriba ya inicializa y llama a cargarUsuariosYComunicados,
-  // pero si queremos mostrar/ocultar el buscador se hace en ese flujo
-}
-
-// init()
-init();
+})();
