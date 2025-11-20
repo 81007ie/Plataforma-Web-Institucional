@@ -1,117 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Perfil — Usuarios</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Perfil — Usuarios</title>
 
-  <link rel="stylesheet" href="css/colors.css">
-  <link rel="stylesheet" href="css/perfil.css">
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/perfil.css">
 
-  <!-- SweetAlert2 (confirmaciones) -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
-  <!-- 🔹 Navbar actualizado -->
-  <nav class="navbar">
-    <div class="logo">Perfil</div>
+    <nav class="navbar">
+    <div class="logo">Perfil</div>
 
-    <ul class="nav-links">
-      <li><a href="dashboard.html">Inicio</a></li>
-    </ul>
+    <ul class="nav-links">
+      <li><a href="dashboard.html">Inicio</a></li>
+                </ul>
 
-    <div class="nav-actions">
-      <button id="btnCerrar" class="btn-logout">Cerrar sesión</button>
-    </div>
-  </nav>
+    <div class="nav-actions">
+      <button id="btnCerrar" class="btn-logout">Cerrar sesión</button>
+    </div>
+  </nav>
 
-  <main>
-    <h1 id="titulo-pantalla">Información del Usuario</h1>
+  <main>
+    <h1 id="titulo-pantalla">Información del Usuario</h1>
 
-    <!-- 🔹 Info del usuario activo -->
-    <div id="usuario-info-box" class="usuario-info-box">
-      <p><b>Nombre:</b> <span id="info-nombre">-</span></p>
-      <p><b>Rol:</b> <span id="info-rol">-</span></p>
-      <p><b>Correo:</b> <span id="info-correo">-</span></p>
-      <p id="info-grado-line"><b>Grado:</b> <span id="info-grado">-</span></p>
-      <p id="info-nivel-line"><b>Nivel:</b> <span id="info-nivel">-</span></p>
-    </div>
+        <div id="usuario-info-box" class="usuario-info-box">
+      <p><b>Nombre:</b> <span id="info-nombre">-</span></p>
+      <p><b>Rol:</b> <span id="info-rol">-</span></p>
+      <p><b>Correo:</b> <span id="info-correo">-</span></p>
+      <p id="info-grado-line"><b>Grado:</b> <span id="info-grado">-</span></p>
+      <p id="info-nivel-line"><b>Nivel:</b> <span id="info-nivel">-</span></p>
+    </div>
 
-    <!-- 🔹 Sección usuarios (solo Admin/Subdirector pueden verla) -->
-    <div id="seccion-usuarios">
-      <!-- 🔹 Acciones -->
-      <div class="acciones">
-        <input id="buscador" placeholder="Buscar por nombre, rol, grado o nivel..." />
-        <!-- Botón visible solo para Administrativos -->
-        <!--<button id="nuevo-usuario-btn" class="btn-primario" style="display:none">+ Nuevo usuario</button> -->
-      </div>
+        <div **id="seccion-usuarios"**> 
+            <div class="acciones">
+        <input id="buscador" placeholder="Buscar por nombre, rol, grado o nivel..." />
+      </div>
 
-      <!-- 🔹 Tabla -->
-      <div class="tabla-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-nombre">Nombre</th>
-              <th class="col-correo">Correo</th>
-              <th class="col-rol">Rol</th>
-              <th class="col-grado">Grado</th>
-              <th class="col-nivel">Nivel</th>
-              <th class="col-accion">Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-usuarios"></tbody>
-        </table>
-      </div>
+            <div class="tabla-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-nombre">Nombre</th>
+              <th class="col-correo">Correo</th>
+              <th class="col-rol">Rol</th>
+              <th class="col-grado">Grado</th>
+              <th class="col-nivel">Nivel</th>
+              <th class="col-accion">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-usuarios"></tbody>
+        </table>
+      </div>
 
-      <!-- 🔹 Paginación -->
-      <div class="paginacion">
-        <button id="btn-prev" class="nav-btn">Anterior</button>
-        <div id="paginacion-chips" class="chips"></div>
-        <button id="btn-next" class="nav-btn">Siguiente</button>
-      </div>
-    </div>
+            <div class="paginacion">
+        <button id="btn-prev" class="nav-btn">Anterior</button>
+        <div id="paginacion-chips" class="chips"></div>
+        <button id="btn-next" class="nav-btn">Siguiente</button>
+      </div>
+    </div>         <section class="comunicados">
+      <h2>Comunicados recientes</h2>
+      <div id="lista-comunicados"></div>
+    </section>
+  </main>
 
-    <!-- 🔹 Comunicados -->
-    <section class="comunicados">
-      <h2>Comunicados recientes</h2>
-      <div id="lista-comunicados"></div>
-    </section>
-  </main>
+    <div id="modal-usuario" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h3 id="modal-title">Editar Usuario</h3>
 
-  <!-- 🔹 Modal usuarios -->
-  <div id="modal-usuario" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <h3 id="modal-title">Editar Usuario</h3>
+      <label>Nombre</label>
+      <input id="nombre-input" type="text" />
 
-      <label>Nombre</label>
-      <input id="nombre-input" type="text" />
+      <label>Correo</label>
+      <input id="correo-input" type="email" readonly />
 
-      <label>Correo</label>
-      <input id="correo-input" type="email" readonly />
+      <label>Rol</label>
+      <select id="rol-input">
+        <option>Administrativo</option>
+        <option>Subdirector</option>
+        <option>Profesor</option>
+        <option>Auxiliar</option>
+        <option>Toe</option>
+      </select>
 
-      <label>Rol</label>
-      <select id="rol-input">
-        <option>Administrativo</option>
-        <option>Subdirector</option>
-        <option>Profesor</option>
-        <option>Auxiliar</option>
-        <option>Toe</option>
-      </select>
+      <label>Grado</label>
+      <input id="grado-input" type="text" />
 
-      <label>Grado</label>
-      <input id="grado-input" type="text" />
+      <label>Nivel</label>
+      <input id="nivel-input" type="text" />
 
-      <label>Nivel</label>
-      <input id="nivel-input" type="text" />
+      <div class="modal-actions">
+        <button id="cancelar-btn" class="btn-sec">Cancelar</button>
+        <button id="guardar-btn" class="btn-primario">Guardar</button>
+      </div>
+    </div>
+  </div>
 
-      <div class="modal-actions">
-        <button id="cancelar-btn" class="btn-sec">Cancelar</button>
-        <button id="guardar-btn" class="btn-primario">Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="js/perfil.js"></script>
+  <script type="module" src="js/perfil.js"></script>
 </body>
 </html>
