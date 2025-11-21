@@ -25,6 +25,14 @@
     width: 90%;
     max-width: 400px;
   }
+
+  /* 🔥 CENTRAR LOGO */
+  .logo {
+    display: block;
+    margin: 0 auto 15px auto;
+    width: 120px;
+  }
+
   .login-container h2 { text-align: center; margin-bottom: 25px; color: var(--azul-oscuro); }
   .login-container input { width: 95%; padding: 12px; margin: 10px 0; border: 1px solid var(--azul-borde); border-radius: 8px; }
   .password-container { position: relative; }
@@ -32,6 +40,7 @@
   button { width: 100%; padding: 12px; margin-top: 15px; border: none; border-radius: 8px; cursor: pointer; background: var(--rojo); color: var(--blanco); font-weight: bold; }
   button:hover { background: var(--celeste); }
 </style>
+
 </head>
 <body>
 <div class="login-container">
@@ -48,10 +57,19 @@
 </div>
 
 <script type="module">
-import { db } from "./js/firebaseconfig.js";
-import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { auth, db } from "./js/firebaseconfig.js";
+import {
+  signInWithEmailAndPassword
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-const loginForm = document.getElementById("loginForm");
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// =======================================
+// 🔹 MOSTRAR / OCULTAR CONTRASEÑA
+// =======================================
 const passwordInput = document.getElementById("password");
 const togglePassword = document.getElementById("togglePassword");
 
@@ -61,53 +79,77 @@ togglePassword.addEventListener("click", () => {
   togglePassword.textContent = isPassword ? "OCULTAR" : "MOSTRAR";
 });
 
+// =======================================
+// 🔹 LOGIN SEGURO
+// =======================================
+const loginForm = document.getElementById("loginForm");
+
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+
   const email = document.getElementById("email").value.trim();
   const password = passwordInput.value;
 
   try {
-    // 🔹 Buscar usuario por correo
-    const q = query(collection(db, "usuarios"), where("correo", "==", email));
-    const snap = await getDocs(q);
+    // 1️⃣ INTENTAR LOGIN CON FIREBASE AUTH
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const user = cred.user;
 
-    if (snap.empty) {
-      Swal.fire("Error", "Usuario no registrado.", "error");
+    // 2️⃣ LEER SU DOCUMENTO EN FIRESTORE
+    const ref = doc(db, "usuarios", user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      Swal.fire("Error", "Tu usuario no está registrado en el sistema.", "error");
+      await auth.signOut();
       return;
     }
 
-    const userDoc = snap.docs[0];
-    const data = userDoc.data();
+    const data = snap.data();
 
-    // 🔹 Verificar si está bloqueado
-    if (data.activo === false) {
-      Swal.fire("Cuenta bloqueada", "Tu cuenta ha sido bloqueada. Comunícate con tu supervisor.", "error");
+    // 3️⃣ VERIFICAR SI ESTÁ BLOQUEADO
+    if (!data.activo) {
+      Swal.fire(
+        "Cuenta bloqueada",
+        "Tu cuenta ha sido bloqueada por el administrativo.",
+        "error"
+      );
+      await auth.signOut();
       return;
     }
 
-    // 🔹 Verificar contraseña (suponiendo que la guardas en Firestore como 'password')
-    if (data.password !== password) {
-      Swal.fire("Error", "Contraseña incorrecta.", "error");
-      return;
-    }
-
-    // 🔹 Guardar info local y redirigir
+    // 4️⃣ GUARDAR INFO EN LOCAL STORAGE
     localStorage.setItem("usuario", JSON.stringify({
-      uid: userDoc.id,
+      uid: user.uid,
       nombre: data.nombre,
       correo: data.correo,
-      rol: data.rol || "Profesor",
+      rol: data.rol,
       grado: data.grado || "",
       nivel: data.nivel || ""
     }));
 
-    window.location.href = "dashboard.html";
+    // 5️⃣ REDIRIGIR
+    Swal.fire({
+      icon: "success",
+      title: "Bienvenido",
+      text: "Inicio de sesión exitoso",
+      timer: 1500,
+      showConfirmButton: false
+    }).then(() => {
+      window.location.href = "dashboard.html";
+    });
 
-  } catch (err) {
-    console.error(err);
-    Swal.fire("Error", "Hubo un problema al iniciar sesión.", "error");
+  } catch (error) {
+    console.error(error);
+
+    Swal.fire(
+      "Error",
+      "Correo o contraseña incorrectos.",
+      "error"
+    );
   }
 });
 </script>
+
 </body>
 </html>
